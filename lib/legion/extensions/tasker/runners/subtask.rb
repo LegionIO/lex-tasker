@@ -2,7 +2,7 @@ module Legion
   module Extensions
     module Tasker
       module Runners
-        class TaskSubtask
+        class Subtask
           def self.check_subtasks(payload)
             namespace = Legion::Data::Model::Namespace.where(namespace: payload[:namespace]).first
             function = Legion::Data::Model::Function.where(namespace_id: namespace.values[:id], name: payload[:method]).first

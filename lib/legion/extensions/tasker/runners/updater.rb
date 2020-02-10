@@ -4,7 +4,7 @@ module Legion
   module Extensions
     module Tasker
       module Runners
-        class TaskUpdater
+        class Updater
           def self.update_status(payload)
             task = Legion::Data::Model::Task[payload[:task_id]]
             update = task.update(status: payload[:status])

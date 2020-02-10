@@ -1,10 +1,7 @@
 module Legion::Extensions::Tasker
   module Transport
     module Queues
-      class Log < Legion::Transport::Queue
-        def queue_name
-          'task.log'
-        end
+      class FetchDelayed < Legion::Transport::Queue
       end
     end
   end

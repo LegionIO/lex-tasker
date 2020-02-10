@@ -1,9 +1,9 @@
 module Legion::Extensions::Tasker
   module Transport
     module Queues
-      class Log < Legion::Transport::Queue
+      class Updater < Legion::Transport::Queue
         def queue_name
-          'task.log'
+          'task.updater'
         end
       end
     end

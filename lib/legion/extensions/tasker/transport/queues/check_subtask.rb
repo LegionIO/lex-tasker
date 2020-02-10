@@ -1,9 +1,9 @@
 module Legion::Extensions::Tasker
   module Transport
     module Queues
-      class LexRegister < Legion::Transport::Queue
+      class CheckSubtask < Legion::Transport::Queue
         def queue_name
-          'lex.register'
+          'task.subtask.check'
         end
 
         def queue_options
