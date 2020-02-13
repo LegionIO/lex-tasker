@@ -4,7 +4,7 @@ require 'legion/extensions'
 module Legion
   module Extensions
     module Tasker
-      extend Legion::Extensions::Default
+      extend Legion::Extensions::Core
     end
   end
 end

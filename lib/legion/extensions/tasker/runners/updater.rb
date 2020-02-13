@@ -1,25 +1,12 @@
-require 'legion/data/models/task'
-
-module Legion
-  module Extensions
-    module Tasker
-      module Runners
-        class Updater
-          def self.update_status(payload)
-            task = Legion::Data::Model::Task[payload[:task_id]]
-            update = task.update(status: payload[:status])
-            result = { success: true }
-            result[:task_id] = payload[:task_id]
-            result[:previous_status] = task.values[:status]
-            result[:status] = payload[:status]
-            result[:changed] = if update.nil?
-                                 false
-                               else
-                                 true
-                               end
-            result
-          end
-        end
+module Legion::Extensions::Tasker
+  module Runners
+    class Updater
+      def self.update_status(task_id:, status:, **_opts)
+        task = Legion::Data::Model::Task[task_id]
+        update = task.update(status: status)
+        result = { success: true, task_id: task_id, status: status, previous_status: task.values[:status] }
+        result[:changed] = update.nil? ? false : true
+        result
       end
     end
   end

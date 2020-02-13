@@ -1,9 +1,11 @@
 module Legion::Extensions::Tasker::Runners
   class FetchDelayed
-    def self.fetch(**opts)
+    def self.fetch(**_opts)
       tasks = Legion::Data::Model::Task.where(status: 'task.delayed')
+      tasks_pushed = []
       tasks.each do |task|
         relationship = task.relationship
+        next if Time.now < task.values[:created_at] + relationship.values[:delay]
 
         subtask = Legion::Transport::Messages::SubTask.new(
           relationship_id:      relationship.values[:id],
@@ -20,15 +22,15 @@ module Legion::Extensions::Tasker::Runners
         )
         subtask.publish
         task.update(status: 'conditioner.queued')
+        tasks_pushed.push(task.values[:id])
       end
-    rescue StandardError => e
-      Legion::Logging.runner_exception(e, opts)
+
+      { success: true, count: tasks_pushed.count, tasks: tasks_pushed }
     end
 
-    def self.push(**opts)
+    def self.push(**_opts)
       Legion::Extensions::Tasker::Transport::Messages::FetchDelayed.new.publish
-    rescue StandardError => e
-      Legion::Logging.runner_exception(e, opts)
+      { success: true }
     end
   end
 end

@@ -5,15 +5,15 @@ module Legion::Extensions::Tasker
         'check_subtasks'
       end
 
-      def subscribe(manual_ack = true)
-        @queue.subscribe(manual_ack: manual_ack) do |delivery_info, _metadata, payload|
+      def subscribe(manual = true)
+        @queue.subscribe(manual_ack: manual, block: false) do |delivery_info, _metadata, payload|
           message = Legion::JSON.load(payload)
-          Legion::Extensions::Tasker::Runners::CheckSubtask.check_subtasks(message[:args])
-          @queue.acknowledge(delivery_info.delivery_tag) if manual_ack
+          Legion::Extensions::Tasker::Runners::CheckSubtask.check_subtasks(namespace: message['namespace'], **message)
+          @queue.acknowledge(delivery_info.delivery_tag) if manual
         rescue StandardError => e
           Legion::Logging.error(e.message)
           Legion::Logging.error(e.backtrace)
-          @queue.reject(delivery_info.delivery_tag) if manual_ack
+          @queue.reject(delivery_info.delivery_tag) if manual
         end
       end
     end

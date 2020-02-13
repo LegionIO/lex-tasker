@@ -14,7 +14,7 @@ module Legion::Extensions::Tasker
       end
 
       def time
-        3
+        5
       end
     end
   end
