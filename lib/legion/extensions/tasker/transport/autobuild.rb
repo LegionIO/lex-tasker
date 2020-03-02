@@ -1,10 +1,10 @@
 require 'legion/transport/exchanges/task'
-require 'legion/extensions/transport/autobuild'
+require 'legion/extensions/transport'
 
 module Legion::Extensions::Tasker
   module Transport
     module AutoBuild
-      extend Legion::Extensions::Transport::AutoBuild
+      extend Legion::Extensions::Transport
       def self.e_to_q
         [
           {
@@ -15,11 +15,7 @@ module Legion::Extensions::Tasker
           {
             from:        Legion::Transport::Exchanges::Task,
             to:          Legion::Extensions::Tasker::Transport::Queues::Log,
-            routing_key: 'task.logs'
-          }, {
-            from:        Legion::Transport::Exchanges::Lex,
-            to:          Legion::Extensions::Tasker::Transport::Queues::LexRegister,
-            routing_key: 'lex.methods.register'
+            routing_key: 'task.logs.#'
           }, {
             from:        Legion::Transport::Exchanges::Task,
             to:          Legion::Extensions::Tasker::Transport::Queues::CheckSubtask,

@@ -1,12 +1,23 @@
 module Legion::Extensions::Tasker
   module Runners
-    class Updater
-      def self.update_status(task_id:, status:, **_opts)
+    module Updater
+      include Legion::Extensions::Helpers::Lex
+
+      def update_status(task_id:, **opts)
         task = Legion::Data::Model::Task[task_id]
-        update = task.update(status: status)
-        result = { success: true, task_id: task_id, status: status, previous_status: task.values[:status] }
-        result[:changed] = update.nil? ? false : true
-        result
+        update_hash = { }
+        [:status, :function_args, :payload, :results].each do |column|
+          next unless opts.has_key? column
+          update_hash[column] = if opts[column].is_a? String
+                                  opts[column]
+                                else
+                                  to_json opts[column]
+                                end
+        end
+        { success: true, changed: false, task_id: task_id } if update_hash.count.zero?
+        task.update(update_hash)
+
+        { success: true, changed: true, task_id: task_id, updates: update_hash }
       end
     end
   end

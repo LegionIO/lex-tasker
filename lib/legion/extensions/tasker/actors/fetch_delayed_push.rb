@@ -1,11 +1,11 @@
 module Legion::Extensions::Tasker
   module Actor
     class FetchDelayedPush < Legion::Extensions::Actors::Every
-      def action
+      def runner_function
         'push'
       end
 
-      def klass
+      def runner_class
         Legion::Extensions::Tasker::Runners::FetchDelayed
       end
 
@@ -14,7 +14,7 @@ module Legion::Extensions::Tasker
       end
 
       def time
-        5
+        1
       end
     end
   end
