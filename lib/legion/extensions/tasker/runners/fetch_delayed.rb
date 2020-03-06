@@ -8,7 +8,8 @@ module Legion::Extensions::Tasker::Runners
       log.debug "tasks.count = #{tasks.count}"
       tasks.each do |task|
         relationship = task.relationship
-        next if Time.now < task.values[:created] + relationship.values[:delay]
+        next if !task.relationship.nil? && Time.now < task.values[:created] + relationship.values[:delay]
+        next if Time.now < task.values[:created] + task.values[:delay]
 
         subtask = Legion::Transport::Messages::SubTask.new(
           relationship_id:      relationship.values[:id],
@@ -29,6 +30,10 @@ module Legion::Extensions::Tasker::Runners
         subtask.publish
         task.update(status: 'conditioner.queued')
         tasks_pushed.push(task.values[:id])
+      rescue => ex
+        task.update(status: 'task.push_exception')
+        log.error ex.message
+        log.error ex.backtrace
       end
 
       { success: true, count: tasks_pushed.count, tasks: tasks_pushed }
