@@ -4,10 +4,6 @@ module Legion::Extensions::Tasker::Transport::Messages
       'fetch.delayed'
     end
 
-    def exchange
-      Legion::Transport::Exchanges::Task
-    end
-
     def expiration
       5000
     end

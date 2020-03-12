@@ -5,12 +5,16 @@ module Legion::Extensions::Tasker
         'check_subtasks'
       end
 
-      def use_runner
+      def check_subtask?
         false
       end
 
-      def queue
-        transport_class::Queues::CheckSubtask
+      def use_runner?
+        false
+      end
+
+      def generate_task?
+        false
       end
     end
   end

@@ -1,7 +1,9 @@
 module Legion::Extensions::Tasker
   module Runners
     module Log
-      def self.add_log(task_id:, entry:, function: nil, runner_class: nil, **opts)
+      include Legion::Extensions::Helpers::Lex
+
+      def add_log(task_id:, entry:, function: nil, runner_class: nil, **opts)
         entry = JSON.dump(entry) unless entry.is_a? String
         insert = { task_id: task_id, entry: entry }
         if opts.key?(:node_id)
@@ -19,26 +21,25 @@ module Legion::Extensions::Tasker
 
         id = Legion::Data::Model::TaskLog.insert(insert)
 
-        result = { success: !id.nil?, id: id }
-        result
+        { success: !id.nil?, id: id }
       end
 
-      def self.delete_log(id:, **_opts)
+      def delete_log(id:, **_opts)
         delete = Legion::Data::Model::TaskLog[id].delete
         { success: delete.positive?, count: delete, deleted_id: id }
       end
 
-      def self.delete_task_logs(task_id:, **_opts)
+      def delete_task_logs(task_id:, **_opts)
         delete = Legion::Data::Model::TaskLog.where(task_id: task_id).delete
         { success: delete.positive?, count: delete, deleted_task_id: task_id }
       end
 
-      def self.delete_node_logs(node_id:, **_opts)
+      def delete_node_logs(node_id:, **_opts)
         delete = Legion::Data::Model::TaskLog.where(node_id: node_id).delete
         { success: delete.positive?, count: delete, deleted_node_id: node_id }
       end
 
-      def self.delete_all(**_opts)
+      def delete_all(**_opts)
         delete = Legion::Data::Model::TaskLog.all.delete
         { success: delete.positive?, count: delete }
       end

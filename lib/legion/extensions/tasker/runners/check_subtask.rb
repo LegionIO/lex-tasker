@@ -2,10 +2,19 @@ require 'legion/transport/messages/subtask'
 
 module Legion::Extensions::Tasker
   module Runners
-    class CheckSubtask
-      def self.check_subtasks(runner_class:, function:, **opts)
+    module CheckSubtask
+      include Legion::Extensions::Helpers::Lex
+
+      def check_subtasks(runner_class:, function:, **opts)
+        # log.warn('running check_subtasks')
+        # log.warn runner_class
+        # log.warn function
+        # log.warn opts
+
         runner_record = Legion::Data::Model::Runner.where(namespace: runner_class).first
+        return if runner_record.nil?
         function_record = runner_record.functions_dataset.where(name: function).first
+        return if function_record.nil?
         relationships = function_record.trigger_relationships_dataset.where(:active)
         if opts.key? :chain_id
           relationships.where(chain_id: opts[:chain_id] || :allow_new_chains)
@@ -53,7 +62,7 @@ module Legion::Extensions::Tasker
         Legion::Logging.fatal opts[:entry]
       end
 
-      def self.send_task(task_id_hash, relationship:,runner_record:,function_record:,action_function:,action_runner:, **opts)
+      def send_task(task_id_hash, relationship:,runner_record:,function_record:,action_function:,action_runner:, **opts)
         task_id = Legion::Runner::Status.generate_task_id(task_id_hash)[:task_id]
 
         return { status: true } unless relationship.values[:delay].zero?

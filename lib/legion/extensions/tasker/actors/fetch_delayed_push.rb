@@ -9,7 +9,15 @@ module Legion::Extensions::Tasker
         Legion::Extensions::Tasker::Runners::FetchDelayed
       end
 
-      def use_runner
+      def check_subtask?
+        false
+      end
+
+      def generate_task?
+        false
+      end
+
+      def use_runner?
         false
       end
 

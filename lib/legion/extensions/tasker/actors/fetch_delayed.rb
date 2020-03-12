@@ -4,6 +4,10 @@ module Legion::Extensions::Tasker
       def runner_function
         'fetch'
       end
+
+      def use_runner?
+        false
+      end
     end
   end
 end
