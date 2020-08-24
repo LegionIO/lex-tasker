@@ -5,9 +5,10 @@ module Legion::Extensions::Tasker
 
       def update_status(task_id:, **opts)
         task = Legion::Data::Model::Task[task_id]
-        update_hash = { }
-        [:status, :function_args, :payload, :results].each do |column|
-          next unless opts.has_key? column
+        update_hash = {}
+        %i[status function_args payload results].each do |column|
+          next unless opts.key? column
+
           update_hash[column] = if opts[column].is_a? String
                                   opts[column]
                                 else

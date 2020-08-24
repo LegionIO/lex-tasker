@@ -12,37 +12,37 @@ module Legion::Extensions::Tasker::Runners
         next if Time.now < task.values[:created] + task.values[:delay]
 
         subtask = Legion::Transport::Messages::SubTask.new(
-          relationship_id:      relationship.values[:id],
-          chain_id:             relationship.values[:chain_id],
-          trigger_runner_id:    relationship.trigger.runner.values[:id],
-          trigger_function_id:  relationship.values[:trigger_id],
-          function_id:          relationship.action.values[:id],
-          function:             relationship.action.values[:name],
-          runner_id:            relationship.action.values[:runner_id],
-          runner_class:         relationship.action.runner.values[:namespace],
-          conditions:           relationship.values[:conditions],
-          transformation:       relationship.values[:transformation],
+          relationship_id:     relationship.values[:id],
+          chain_id:            relationship.values[:chain_id],
+          trigger_runner_id:   relationship.trigger.runner.values[:id],
+          trigger_function_id: relationship.values[:trigger_id],
+          function_id:         relationship.action.values[:id],
+          function:            relationship.action.values[:name],
+          runner_id:           relationship.action.values[:runner_id],
+          runner_class:        relationship.action.runner.values[:namespace],
+          conditions:          relationship.values[:conditions],
+          transformation:      relationship.values[:transformation],
           # debug:                relationship.values[:debug],
-          task_id:              task.values[:id],
+          task_id:             task.values[:id]
           # results:              task.values[:payload]
         )
         log.debug 'publishing task'
         subtask.publish
         task.update(status: 'conditioner.queued')
         tasks_pushed.push(task.values[:id])
-      rescue => ex
+      rescue StandardError => e
         task.update(status: 'task.push_exception')
-        log.error ex.message
-        log.error ex.backtrace
+        log.error e.message
+        log.error e.backtrace
       end
 
       { success: true, count: tasks_pushed.count, tasks: tasks_pushed }
-    rescue => ex
-      Legion::Logging.error ex.message
-      Legion::Logging.error ex.backtrace
+    rescue StandardError => e
+      Legion::Logging.error e.message
+      Legion::Logging.error e.backtrace
     end
 
-    def push(**opts)
+    def push(**_opts)
       log.debug 'push has been called'
       Legion::Extensions::Tasker::Transport::Messages::FetchDelayed.new.publish
       { success: true }

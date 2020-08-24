@@ -16,7 +16,9 @@ module Legion::Extensions::Tasker
 
         unless function.nil? && runner_class.nil?
           runner = Legion::Data::Model::Runner.where(namespace: runner_class).first
-          insert[:function_id] = runner.functions_dataset.where(name: function).first.values[:id] unless runner.values.nil?
+          unless runner.values.nil?
+            insert[:function_id] = runner.functions_dataset.where(name: function).first.values[:id]
+          end
         end
 
         id = Legion::Data::Model::TaskLog.insert(insert)
