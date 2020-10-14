@@ -6,10 +6,10 @@ module Legion::Extensions::Tasker
       include Legion::Extensions::Helpers::Lex
 
       def check_subtasks(runner_class:, function:, **opts)
-        runner_record = Legion::Data::Model::Runner.where(namespace: runner_class).first
+        runner_record = Legion::Data::Model::Runner[namespace: runner_class]
         return if runner_record.nil?
 
-        function_record = runner_record.functions_dataset.where(name: function).first
+        function_record = runner_record.functions_dataset[name: function]
         return if function_record.nil?
 
         relationships = function_record.trigger_relationships_dataset.where(:active)
@@ -92,6 +92,14 @@ module Legion::Extensions::Tasker
           task_id:             task_id,
           results:             opts[:result]
         }
+
+        subtask_hash[:routing_key] = if subtask_hash[:conditions].is_a?(String) && subtask_hash[:conditioners].length > 4 # rubocop:disable Layout/LineLength
+                                       'task.subtask.conditioner'
+                                     elsif subtask_hash[:transformation].is_a?(String) && subtask_hash[:transformation].length > 4 # rubocop:disable Layout/LineLength
+                                       'task.subtask.transform'
+                                     else
+                                       "#{runner_record.extension.values[:exchange]}.#{runner_record.values[:queue]}.#{subtask_hash[:function]}" # rubocop:disable Layout/LineLength
+                                     end
 
         subtask_hash[:success] = if opts.nil?
                                    1
