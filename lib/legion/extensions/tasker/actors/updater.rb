@@ -12,6 +12,10 @@ module Legion::Extensions::Tasker
       def generate_task?
         false
       end
+
+      def use_runner?
+        false
+      end
     end
   end
 end
