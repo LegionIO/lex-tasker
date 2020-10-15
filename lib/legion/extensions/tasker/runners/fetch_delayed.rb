@@ -9,7 +9,8 @@ module Legion::Extensions::Tasker::Runners
       tasks.each do |task|
         relationship = task.relationship
         next if !task.relationship.nil? && Time.now < task.values[:created] + relationship.values[:delay]
-        next if Time.now < task.values[:created] + task.values[:delay]
+
+        # next if Time.now < task.values[:created] + task.values[:delay]
 
         subtask = Legion::Transport::Messages::SubTask.new(
           relationship_id:     relationship.values[:id],
@@ -26,7 +27,6 @@ module Legion::Extensions::Tasker::Runners
           task_id:             task.values[:id]
           # results:              task.values[:payload]
         )
-        log.debug 'publishing task'
         subtask.publish
         task.update(status: 'conditioner.queued')
         tasks_pushed.push(task.values[:id])
@@ -43,7 +43,6 @@ module Legion::Extensions::Tasker::Runners
     end
 
     def push(**_opts)
-      log.debug 'push has been called'
       Legion::Extensions::Tasker::Transport::Messages::FetchDelayed.new.publish
       { success: true }
     end
