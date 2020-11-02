@@ -19,6 +19,10 @@ module Legion::Extensions::Tasker
         }, {
           to:          'fetch_delayed',
           routing_key: 'fetch.delayed'
+        }, {
+          from:        'tasker',
+          to:          'task_manager',
+          routing_key: 'task.task_manager.#'
         }
       ]
     end

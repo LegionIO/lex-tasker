@@ -7,7 +7,10 @@ module Legion::Extensions::Tasker
         end
 
         def queue_options
-          { auto_delete: false }
+          {
+            auto_delete: false,
+            arguments:   { 'x-max-priority': 255 }
+          }
         end
       end
     end

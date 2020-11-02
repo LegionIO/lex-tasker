@@ -5,6 +5,16 @@ module Legion::Extensions::Tasker
         def queue_name
           'task.fetch_delayed'
         end
+
+        def queue_options
+          {
+            arguments: {
+              'x-single-active-consumer': true,
+              'x-max-priority':           255,
+              'x-message-ttl':            1
+            }
+          }
+        end
       end
     end
   end

@@ -5,7 +5,19 @@ module Legion::Extensions::Tasker
         'fetch'
       end
 
+      def runner_class
+        Legion::Extensions::Tasker::Runners::FetchDelayed
+      end
+
       def use_runner?
+        false
+      end
+
+      def check_subtask?
+        false
+      end
+
+      def generate_task?
         false
       end
     end
