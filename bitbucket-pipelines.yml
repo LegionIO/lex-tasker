@@ -66,4 +66,4 @@ pipelines:
 
 definitions:
   caches:
-    bundle: /usr/local/bundle
+    bundler: /usr/local/bundle

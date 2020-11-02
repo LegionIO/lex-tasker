@@ -5,57 +5,35 @@ orbs:
 jobs:
   "rubocop":
     docker:
-      - image: circleci/ruby:2.5-node
+      - image: circleci/ruby:2.7
     steps:
       - checkout
       - ruby/load-cache
       - ruby/install-deps
       - run:
+          name: Update bundler
+          command: gem update bundler
+      - run:
           name: Run Rubocop
           command: bundle exec rubocop
       - ruby/save-cache
-  "ruby-two-five":
-    docker:
-      - image: circleci/ruby:2.5
-      - image: memcached:1.5-alpine
-    steps:
-      - checkout
-      - ruby/load-cache
-      - ruby/install-deps
-      - ruby/run-tests
-      - ruby/save-cache
-  "ruby-two-six":
-    docker:
-      - image: circleci/ruby:2.6
-      - image: memcached:1.5-alpine
-    steps:
-      - checkout
-      - ruby/load-cache
-      - ruby/install-deps
-      - ruby/run-tests
-      - ruby/save-cache
-  "ruby-two-seven":
+  "rspec":
     docker:
       - image: circleci/ruby:2.7
-      - image: memcached:1.5-alpine
     steps:
       - checkout
       - ruby/load-cache
       - ruby/install-deps
+      - run:
+          name: Update bundler
+          command: gem update bundler
       - ruby/run-tests
       - ruby/save-cache
-
 workflows:
   version: 2
   rubocop-rspec:
     jobs:
       - rubocop
-      - ruby-two-five:
+      - rspec:
           requires:
             - rubocop
-      - ruby-two-six:
-          requires:
-            - ruby-two-five
-      - ruby-two-seven:
-          requires:
-            - ruby-two-five
