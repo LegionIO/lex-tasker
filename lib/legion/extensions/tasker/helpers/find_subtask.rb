@@ -38,8 +38,8 @@ module Legion
             cache = Legion::Cache.get(sql)
             return cache unless cache.nil?
 
-            results = Legion::Data::Connection.sequel.fetch(sql)
-            Legion::Cache.set(sql, results, ttl: 5) if results.is_a?(Hash) && results.count.positive?
+            results = Legion::Data::Connection.sequel.fetch(sql).all
+            Legion::Cache.set(sql, results, 5) if results.is_a?(Array) && results.count.positive?
             results
           end
         end
