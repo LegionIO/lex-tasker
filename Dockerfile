@@ -6,4 +6,4 @@ RUN apk update && apk add build-base tzdata postgresql-dev mysql-client mariadb-
 
 COPY . ./
 RUN gem install lex-tasker legion-data --no-document --no-prerelease
-CMD ruby $(which legionio)
+CMD ruby --yjit $(which legionio)
