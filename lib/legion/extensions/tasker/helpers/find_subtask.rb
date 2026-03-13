@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Legion
   module Extensions
     module Tasker
@@ -14,7 +16,7 @@ module Legion
             return cache unless cache.nil?
 
             results = Legion::Data::Connection.sequel.fetch(sql).first
-            Legion::Cache.set(sql, results) if results.is_a?(Hash) && results.count.positive?
+            Legion::Cache.set(sql, results) if results.is_a?(Hash) && results.any?
             results
           end
 
@@ -39,7 +41,7 @@ module Legion
             return cache unless cache.nil?
 
             results = Legion::Data::Connection.sequel.fetch(sql).all
-            Legion::Cache.set(sql, results, 5) if results.is_a?(Array) && results.count.positive?
+            Legion::Cache.set(sql, results, 5) if results.is_a?(Array) && results.any?
             results
           end
         end

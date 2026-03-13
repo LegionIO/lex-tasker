@@ -1,28 +1,34 @@
-module Legion::Extensions::Tasker
-  module Actor
-    class FetchDelayedPush < Legion::Extensions::Actors::Every
-      def runner_function
-        'push'
-      end
+# frozen_string_literal: true
 
-      def runner_class
-        Legion::Extensions::Tasker::Runners::FetchDelayed
-      end
+module Legion
+  module Extensions
+    module Tasker
+      module Actor
+        class FetchDelayedPush < Legion::Extensions::Actors::Every
+          def runner_function
+            'push'
+          end
 
-      def check_subtask?
-        false
-      end
+          def runner_class
+            Legion::Extensions::Tasker::Runners::FetchDelayed
+          end
 
-      def generate_task?
-        false
-      end
+          def check_subtask?
+            false
+          end
 
-      def use_runner?
-        false
-      end
+          def generate_task?
+            false
+          end
 
-      def time
-        1
+          def use_runner?
+            false
+          end
+
+          def time
+            1
+          end
+        end
       end
     end
   end

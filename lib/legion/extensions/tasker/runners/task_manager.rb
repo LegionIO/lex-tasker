@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Legion
   module Extensions
     module Tasker
@@ -9,7 +11,7 @@ module Legion
                       .where(Sequel.lit("created <= DATE_SUB(SYSDATE(), INTERVAL #{age} DAY)"))
                       .limit(limit)
             dataset.where(status: status) unless ['*', nil, ''].include? status
-            log.debug "Deleting #{dataset.count} records" if dataset.count.positive?
+            log.debug "Deleting #{dataset.count} records" if dataset.any?
             dataset&.delete
           end
 

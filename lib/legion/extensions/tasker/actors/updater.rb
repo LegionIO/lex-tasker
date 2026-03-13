@@ -1,20 +1,26 @@
-module Legion::Extensions::Tasker
-  module Actor
-    class Updater < Legion::Extensions::Actors::Subscription
-      def runner_function
-        'update_status'
-      end
+# frozen_string_literal: true
 
-      def check_subtask?
-        false
-      end
+module Legion
+  module Extensions
+    module Tasker
+      module Actor
+        class Updater < Legion::Extensions::Actors::Subscription
+          def runner_function
+            'update_status'
+          end
 
-      def generate_task?
-        false
-      end
+          def check_subtask?
+            false
+          end
 
-      def use_runner?
-        false
+          def generate_task?
+            false
+          end
+
+          def use_runner?
+            false
+          end
+        end
       end
     end
   end

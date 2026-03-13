@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 name = 'tasker'
 require "./lib/legion/extensions/#{name}/version"
