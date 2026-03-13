@@ -6,7 +6,7 @@ require 'spec_helper'
 module Legion
   module Transport
     module Messages
-      class SubTask; end
+      class SubTask; end # rubocop:disable Lint/EmptyClass
     end
   end
 
@@ -32,6 +32,7 @@ $LOADED_FEATURES << 'legion/transport/messages/subtask'
 
 require 'legion/extensions/tasker/runners/check_subtask'
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe 'CheckSubtask pure logic' do
   let(:test_obj) do
     obj = Object.new
@@ -159,3 +160,4 @@ RSpec.describe 'CheckSubtask pure logic' do
     end
   end
 end
+# rubocop:enable Metrics/BlockLength
