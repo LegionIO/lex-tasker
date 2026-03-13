@@ -9,14 +9,17 @@ module Legion
       class SubTask; end
     end
   end
+
   module Extensions
     module Helpers
       module Lex; end
     end
+
     module Tasker
       module Helpers
         module FindSubtask; end
       end
+
       module Runners
         module CheckSubtask; end
       end
