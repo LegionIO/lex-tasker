@@ -2,5 +2,11 @@
 
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in legion-extensions-tasker.gemspec
 gemspec
+
+gem 'bundler', '>= 2'
+gem 'codecov'
+gem 'rake'
+gem 'rspec'
+gem 'rspec_junit_formatter'
+gem 'rubocop'

@@ -26,11 +26,4 @@ Gem::Specification.new do |spec|
   spec.metadata['bug_tracker_uri'] = 'https://github.com/LegionIO/lex-tasker/issues'
   spec.metadata['rubygems_mfa_required'] = 'true'
   spec.require_paths = ['lib']
-
-  spec.add_development_dependency 'bundler', '>= 2'
-  spec.add_development_dependency 'codecov'
-  spec.add_development_dependency 'rake'
-  spec.add_development_dependency 'rspec'
-  spec.add_development_dependency 'rspec_junit_formatter'
-  spec.add_development_dependency 'rubocop'
 end

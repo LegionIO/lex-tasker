@@ -10,47 +10,55 @@ module Legion
 
           def fetch(**_opts)
             find_delayed.each do |task|
-              if task[:relationship_delay].is_a?(Integer) && task[:relationship_delay].positive?
-                next if Time.now < task[:created] + task[:relationship_delay] # rubocop:disable Style/SoleNestedConditional
-              end
+              next if delayed_by?(task[:relationship_delay], task[:created])
+              next if delayed_by?(task[:task_delay], task[:created])
 
-              if task[:task_delay].is_a?(Integer) && task[:task_delay].positive?
-                next if Time.now < task[:created] + task[:task_delay] # rubocop:disable Style/SoleNestedConditional
-              end
-
-              subtask_hash = {
-                relationship_id: task[:relationship_id],
-                chain_id:        task[:chain_id],
-                function_id:     task[:function_id],
-                function:        task[:function_name],
-                runner_id:       task[:runner_id],
-                runner_class:    task[:runner_class],
-                task_id:         task[:id],
-                exchange:        task[:exchange],
-                queue:           task[:queue]
-              }
-
-              subtask_hash[:conditions] = task[:conditions] if task[:conditions].is_a?(String)
-              subtask_hash[:transformation] = task[:transformation] if task[:transformation].is_a?(String)
-
-              subtask_hash[:routing_key] = if task[:conditions].is_a?(String) && task[:conditions].length > 4
-                                             'task.subtask.conditioner'
-                                           elsif task[:transformation].is_a?(String) && task[:transformation].length > 4
-                                             'task.subtask.transformation'
-                                           else
-                                             task[:runner_routing_key]
-                                           end
-
+              subtask_hash = build_delayed_hash(task)
               send_task(**subtask_hash)
-              case subtask_hash[:routing_key]
-              when 'task.subtask.conditioner'
-                task_update(task[:id], 'conditioner.queued')
-              when 'task.subtask.transformation'
-                task_update(task[:id], 'transformer.queued')
-              else
-                task_update(task[:id], 'task.queued')
-              end
+              update_delayed_status(task[:id], subtask_hash[:routing_key])
             end
+          end
+
+          def delayed_by?(delay, created)
+            delay.is_a?(Integer) && delay.positive? && Time.now < created + delay
+          end
+
+          def build_delayed_hash(task)
+            subtask_hash = {
+              relationship_id: task[:relationship_id],
+              chain_id:        task[:chain_id],
+              function_id:     task[:function_id],
+              function:        task[:function_name],
+              runner_id:       task[:runner_id],
+              runner_class:    task[:runner_class],
+              task_id:         task[:id],
+              exchange:        task[:exchange],
+              queue:           task[:queue]
+            }
+
+            subtask_hash[:conditions] = task[:conditions] if task[:conditions].is_a?(String)
+            subtask_hash[:transformation] = task[:transformation] if task[:transformation].is_a?(String)
+            subtask_hash[:routing_key] = delayed_routing_key(task)
+            subtask_hash
+          end
+
+          def delayed_routing_key(task)
+            if task[:conditions].is_a?(String) && task[:conditions].length > 4
+              'task.subtask.conditioner'
+            elsif task[:transformation].is_a?(String) && task[:transformation].length > 4
+              'task.subtask.transformation'
+            else
+              task[:runner_routing_key]
+            end
+          end
+
+          def update_delayed_status(task_id, routing_key)
+            status = case routing_key
+                     when 'task.subtask.conditioner' then 'conditioner.queued'
+                     when 'task.subtask.transformation' then 'transformer.queued'
+                     else 'task.queued'
+                     end
+            task_update(task_id, status)
           end
 
           def send_task(**opts)
