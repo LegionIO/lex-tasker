@@ -53,7 +53,7 @@ Legion::Extensions::Tasker
 |------|---------|
 | `lib/legion/extensions/tasker.rb` | Entry point (`data_required? true`) |
 | `lib/legion/extensions/tasker/runners/check_subtask.rb` | Core subtask dispatch: find relationships, build task hash, insert DB record, publish |
-| `lib/legion/extensions/tasker/runners/task_manager.rb` | `purge_old` (delete old completed tasks), `expire_queued` |
+| `lib/legion/extensions/tasker/runners/task_manager.rb` | `purge_old` (delete old completed tasks), `expire_queued` (queries stale tasks - incomplete, does not delete) |
 | `lib/legion/extensions/tasker/runners/fetch_delayed.rb` | Poll DB for delayed tasks, dispatch when delay elapsed |
 | `lib/legion/extensions/tasker/runners/updater.rb` | `update_status`: update task columns (status, function_args, payload, results) |
 | `lib/legion/extensions/tasker/runners/log.rb` | Task log CRUD against `TaskLog` model |
@@ -68,7 +68,7 @@ Legion::Extensions::Tasker
 
 ## Delayed Task Flow
 
-`FetchDelayedPush` periodically publishes a trigger. `FetchDelayed` runner polls DB for tasks in `task.delayed` status, checks if `relationship_delay` or `task_delay` has elapsed, then dispatches them. Routing key is chosen based on whether conditions or transformations are present.
+`FetchDelayedPush` (Every actor, every 1 second) publishes a trigger via `push`. `FetchDelayed` (Subscription actor, `fetch` function) polls DB for tasks in `task.delayed` status, checks if `relationship_delay` or `task_delay` has elapsed, then dispatches them. Routing key is chosen based on whether conditions or transformations are present.
 
 ## Testing
 
