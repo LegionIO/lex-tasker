@@ -13,7 +13,7 @@ module Legion
             def queue_options
               {
                 auto_delete: false,
-                arguments:   { 'x-max-priority': 255 }
+                arguments:   {}
               }
             end
           end

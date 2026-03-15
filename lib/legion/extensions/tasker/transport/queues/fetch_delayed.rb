@@ -14,7 +14,6 @@ module Legion
               {
                 arguments: {
                   'x-single-active-consumer': true,
-                  'x-max-priority':           255,
                   'x-message-ttl':            1
                 }
               }
