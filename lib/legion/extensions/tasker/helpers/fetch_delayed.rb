@@ -32,7 +32,7 @@ module Legion
                 INNER JOIN legion.runners ON (runners.id = functions.runner_id)
                 INNER JOIN `legion`.`extensions` ON (`runners`.`extension_id` = `extensions`.`id`)
                 LEFT JOIN legion.relationships ON (relationships.id = tasks.relationship_id)
-              WHERE status = \'task.delayed\';'
+              WHERE tasks.status = \'task.delayed\';'
 
             Legion::Data::Connection.sequel.fetch(sql).all
           end

@@ -10,29 +10,37 @@ module Legion
     end
   end
 
-  module Data
-    module Model
-      class TaskLog
-        def self.insert(hash); 42 end
-        def self.[](id); nil end
-        def self.where(*); self end
-        def self.all; self end
-        def self.delete; 1 end
-        def self.first; nil end
-      end unless defined?(TaskLog)
+  unless defined?(Legion::Data)
+    module Data
+      module Model
+        unless defined?(TaskLog)
+          class TaskLog
+            def self.insert(_hash) = 42
+            def self.[](_id) = nil
+            def self.where(*) = self
+            def self.all = self
+            def self.delete = 1
+            def self.first = nil
+          end
+        end
 
-      class Node
-        def self.where(*); self end
-        def self.first; nil end
-      end unless defined?(Node)
+        unless defined?(Node)
+          class Node
+            def self.where(*) = self
+            def self.first = nil
+          end
+        end
 
-      class Runner
-        def self.where(*); self end
-        def self.first; nil end
-        def self.values; nil end
-      end unless defined?(Runner)
+        unless defined?(Runner)
+          class Runner
+            def self.where(*) = self
+            def self.first = nil
+            def self.values = nil
+          end
+        end
+      end
     end
-  end unless defined?(Legion::Data)
+  end
 end
 
 require 'legion/extensions/tasker/runners/log'

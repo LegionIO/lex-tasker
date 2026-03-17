@@ -16,10 +16,12 @@ module Legion
 
       module Transport
         module Messages
-          class FetchDelayed
-            def initialize(**); end
-            def publish; end
-          end unless defined?(FetchDelayed)
+          unless defined?(FetchDelayed)
+            class FetchDelayed
+              def initialize(**); end
+              def publish; end
+            end
+          end
         end
       end
     end
@@ -27,16 +29,20 @@ module Legion
 
   module Transport
     module Messages
-      class Task
-        def initialize(**); end
-        def publish; end
-      end unless defined?(Task)
+      unless defined?(Task)
+        class Task
+          def initialize(**); end
+          def publish; end
+        end
+      end
     end
   end
 
-  module Logging
-    def self.debug(*); end
-  end unless defined?(Legion::Logging)
+  unless defined?(Legion::Logging)
+    module Logging
+      def self.debug(*); end
+    end
+  end
 end
 
 require 'legion/extensions/tasker/runners/fetch_delayed'
@@ -103,8 +109,8 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
 
     it 'prioritizes conditions over transformation' do
       task = {
-        conditions:    '{"all":[{"fact":"x"}]}',
-        transformation: '{"key":"val"}',
+        conditions:         '{"all":[{"fact":"x"}]}',
+        transformation:     '{"key":"val"}',
         runner_routing_key: 'ext.runner.func'
       }
       expect(runner.delayed_routing_key(task)).to eq('task.subtask.conditioner')
@@ -131,18 +137,18 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
   describe '#build_delayed_hash' do
     let(:task) do
       {
-        id:              10,
-        relationship_id: 5,
-        chain_id:        2,
-        function_id:     3,
-        function_name:   'process',
-        runner_id:       1,
-        runner_class:    'MyExt::Runners::MyRunner',
+        id:                 10,
+        relationship_id:    5,
+        chain_id:           2,
+        function_id:        3,
+        function_name:      'process',
+        runner_id:          1,
+        runner_class:       'MyExt::Runners::MyRunner',
         runner_routing_key: 'ext.runner.process',
-        exchange:        'ext',
-        queue:           'runner',
-        conditions:      nil,
-        transformation:  nil
+        exchange:           'ext',
+        queue:              'runner',
+        conditions:         nil,
+        transformation:     nil
       }
     end
 

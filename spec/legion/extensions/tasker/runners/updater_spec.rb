@@ -10,17 +10,23 @@ module Legion
     end
   end
 
-  module Data
-    module Model
-      class Task
-        def self.[](id); nil end
-      end unless defined?(Task)
+  unless defined?(Legion::Data)
+    module Data
+      module Model
+        unless defined?(Task)
+          class Task
+            def self.[](_id) = nil
+          end
+        end
+      end
     end
-  end unless defined?(Legion::Data)
+  end
 
-  module Logging
-    def self.unknown(*); end
-  end unless defined?(Legion::Logging)
+  unless defined?(Legion::Logging)
+    module Logging
+      def self.unknown(*); end
+    end
+  end
 end
 
 require 'legion/extensions/tasker/runners/updater'

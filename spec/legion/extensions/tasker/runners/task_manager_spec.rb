@@ -12,25 +12,31 @@ module Legion
 
   module Data
     module Model
-      class Task
-        def self.where(*); self end
-        def self.limit(n); self end
-        def self.count; 0 end
-        def self.any?; false end
-        def self.delete; 0 end
-      end unless defined?(Legion::Data::Model::Task)
+      unless defined?(Legion::Data::Model::Task)
+        class Task
+          def self.where(*) = self
+          def self.limit(_num) = self
+          def self.count = 0
+          def self.any? = false
+          def self.delete = 0
+        end
+      end
     end
   end
 
-  module Logging
-    def self.debug(*); end
-  end unless defined?(Legion::Logging)
+  unless defined?(Legion::Logging)
+    module Logging
+      def self.debug(*); end
+    end
+  end
 end
 
 # Stub Sequel for the date literal in purge_old
-module Sequel
-  def self.lit(str); str end
-end unless defined?(Sequel)
+unless defined?(Sequel)
+  module Sequel
+    def self.lit(str) = str
+  end
+end
 
 require 'legion/extensions/tasker/runners/task_manager'
 
