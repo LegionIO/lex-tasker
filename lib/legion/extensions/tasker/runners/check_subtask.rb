@@ -8,7 +8,7 @@ module Legion
       module Runners
         module CheckSubtask
           include Legion::Extensions::Helpers::Lex
-          extend Legion::Extensions::Tasker::Helpers::FindSubtask
+          include Legion::Extensions::Tasker::Helpers::TaskFinder
 
           def check_subtasks(runner_class:, function:, **opts)
             trigger = find_trigger(runner_class: runner_class, function: function)

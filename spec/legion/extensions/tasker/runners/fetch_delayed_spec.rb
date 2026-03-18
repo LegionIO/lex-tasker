@@ -11,7 +11,7 @@ module Legion
 
     module Tasker
       module Helpers
-        module FetchDelayed; end unless defined?(Legion::Extensions::Tasker::Helpers::FetchDelayed)
+        module TaskFinder; end unless defined?(Legion::Extensions::Tasker::Helpers::TaskFinder)
       end
 
       module Transport

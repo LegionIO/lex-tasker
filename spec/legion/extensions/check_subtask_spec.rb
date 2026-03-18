@@ -17,7 +17,7 @@ module Legion
 
     module Tasker
       module Helpers
-        module FindSubtask; end
+        module TaskFinder; end
       end
 
       module Runners

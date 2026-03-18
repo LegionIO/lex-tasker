@@ -5,7 +5,7 @@ module Legion
     module Tasker
       module Runners
         module FetchDelayed
-          extend Legion::Extensions::Tasker::Helpers::FetchDelayed
+          include Legion::Extensions::Tasker::Helpers::TaskFinder
           include Legion::Extensions::Helpers::Task
 
           def fetch(**_opts)
