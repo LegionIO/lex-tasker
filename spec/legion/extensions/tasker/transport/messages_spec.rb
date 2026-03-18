@@ -4,11 +4,13 @@ require 'spec_helper'
 
 module Legion
   module Transport
-    class Message
-      def routing_key; end
-      def expiration; end
-      def publish; end
-    end unless defined?(Legion::Transport::Message)
+    unless defined?(Legion::Transport::Message)
+      class Message
+        def routing_key; end
+        def expiration; end
+        def publish; end
+      end
+    end
   end
 end
 

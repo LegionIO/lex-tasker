@@ -12,7 +12,7 @@ module Legion
 
             result = Legion::Data::Model::Function
                      .join(:runners, id: :runner_id)
-                     .where(Sequel[:functions][:name] => function,
+                     .where(Sequel[:functions][:name]    => function,
                             Sequel[:runners][:namespace] => runner_class)
                      .select(Sequel[:functions][:id].as(:function_id),
                              Sequel[:functions][:runner_id],
@@ -28,33 +28,10 @@ module Legion
             cached = Legion::Cache.get(cache_key)
             return cached unless cached.nil?
 
-            results = Legion::Data::Model::Relationship
-                      .join(:functions, id: :action_id)
-                      .join(:runners, id: Sequel[:functions][:runner_id])
-                      .join(:extensions, id: Sequel[:runners][:extension_id])
-                      .where(Sequel[:relationships][:trigger_id] => trigger_id,
-                             Sequel[:relationships][:active] => true)
-                      .select(
-                        Sequel[:relationships][:id].as(:relationship_id),
-                        Sequel[:relationships][:debug],
-                        Sequel[:relationships][:chain_id],
-                        Sequel[:relationships][:allow_new_chains],
-                        Sequel[:relationships][:delay],
-                        Sequel[:relationships][:trigger_id],
-                        Sequel[:relationships][:action_id],
-                        Sequel[:relationships][:conditions],
-                        Sequel[:relationships][:transformation],
-                        Sequel[:runners][:namespace],
-                        Sequel[:runners][:id].as(:runner_id),
-                        Sequel[:runners][:queue],
-                        Sequel[:runners][:namespace].as(:runner_class),
-                        Sequel[:functions][:id].as(:function_id),
-                        Sequel[:functions][:name].as(:function),
-                        Sequel[:extensions][:exchange]
-                      ).all.map do |row|
-                        row[:runner_routing_key] = "#{row[:exchange]}.#{row[:queue]}.#{row[:function]}"
-                        row
-                      end
+            results = subtask_query(trigger_id).all.map do |row|
+              row[:runner_routing_key] = "#{row[:exchange]}.#{row[:queue]}.#{row[:function]}"
+              row
+            end
 
             Legion::Cache.set(cache_key, results, 5) if results.is_a?(Array) && results.any?
             results
@@ -84,6 +61,35 @@ module Legion
                 task[:runner_routing_key] = "#{task[:exchange]}.#{task[:queue]}.#{task[:function_name]}"
                 task
               end
+          end
+
+          private
+
+          def subtask_query(trigger_id)
+            Legion::Data::Model::Relationship
+              .join(:functions, id: :action_id)
+              .join(:runners, id: Sequel[:functions][:runner_id])
+              .join(:extensions, id: Sequel[:runners][:extension_id])
+              .where(Sequel[:relationships][:trigger_id] => trigger_id,
+                     Sequel[:relationships][:active]     => true)
+              .select(
+                Sequel[:relationships][:id].as(:relationship_id),
+                Sequel[:relationships][:debug],
+                Sequel[:relationships][:chain_id],
+                Sequel[:relationships][:allow_new_chains],
+                Sequel[:relationships][:delay],
+                Sequel[:relationships][:trigger_id],
+                Sequel[:relationships][:action_id],
+                Sequel[:relationships][:conditions],
+                Sequel[:relationships][:transformation],
+                Sequel[:runners][:namespace],
+                Sequel[:runners][:id].as(:runner_id),
+                Sequel[:runners][:queue],
+                Sequel[:runners][:namespace].as(:runner_class),
+                Sequel[:functions][:id].as(:function_id),
+                Sequel[:functions][:name].as(:function),
+                Sequel[:extensions][:exchange]
+              )
           end
         end
       end

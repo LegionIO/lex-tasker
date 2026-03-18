@@ -69,7 +69,6 @@ module Legion
       end
     end
   end
-
 end
 
 unless defined?(Sequel)
@@ -106,6 +105,7 @@ end
 
 require 'legion/extensions/tasker/helpers/task_finder'
 
+# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
   let(:finder) do
     obj = Object.new
@@ -232,3 +232,4 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     end
   end
 end
+# rubocop:enable Metrics/BlockLength

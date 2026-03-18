@@ -6,7 +6,7 @@ module Legion
   module Transport
     class Queue
       def queue_name; end
-      def queue_options; {}; end
+      def queue_options = {}
     end
   end
 end
