@@ -11,8 +11,6 @@ module Legion
             task = Legion::Data::Model::Task[task_id]
             return { success: false, changed: false, task_id: task_id, message: 'task nil' } if task.nil? || task.values.nil?
 
-            log.unknown task.class
-
             update_hash = {}
             %i[status function_args payload results].each do |column|
               next unless opts.key? column
@@ -23,7 +21,8 @@ module Legion
                                       to_json opts[column]
                                     end
             end
-            { success: true, changed: false, task_id: task_id } if update_hash.none?
+            return { success: true, changed: false, task_id: task_id } if update_hash.none?
+
             task.update(update_hash)
 
             { success: true, changed: true, task_id: task_id, updates: update_hash }

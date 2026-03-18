@@ -151,20 +151,48 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Log do
   end
 
   describe '#delete_all' do
-    it 'deletes all task log records' do
-      all_records = double('all_records')
-      allow(all_records).to receive(:delete).and_return(100)
-      allow(Legion::Data::Model::TaskLog).to receive(:all).and_return(all_records)
+    it 'deletes all task log records via dataset' do
+      dataset = double('dataset')
+      allow(dataset).to receive(:delete).and_return(100)
+      allow(Legion::Data::Model::TaskLog).to receive(:dataset).and_return(dataset)
       result = runner.delete_all
       expect(result).to include(success: true, count: 100)
     end
 
     it 'returns success: false when no records were deleted' do
-      all_records = double('all_records')
-      allow(all_records).to receive(:delete).and_return(0)
-      allow(Legion::Data::Model::TaskLog).to receive(:all).and_return(all_records)
+      dataset = double('dataset')
+      allow(dataset).to receive(:delete).and_return(0)
+      allow(Legion::Data::Model::TaskLog).to receive(:dataset).and_return(dataset)
       result = runner.delete_all
       expect(result[:success]).to eq(false)
+    end
+  end
+
+  describe '#add_log with node_id in opts' do
+    it 'uses opts[:node_id] not undefined payload variable' do
+      allow(Legion::Data::Model::TaskLog).to receive(:insert) do |hash|
+        expect(hash[:node_id]).to eq(7)
+        42
+      end
+      runner.add_log(task_id: 1, entry: 'log', node_id: 7)
+    end
+  end
+
+  describe '#add_log with name lookup' do
+    it 'queries node by name and uses its id' do
+      node = double('node', values: { id: 3 })
+      allow(Legion::Data::Model::Node).to receive(:where).with(name: 'node-01').and_return(double(first: node))
+      allow(Legion::Data::Model::TaskLog).to receive(:insert) do |hash|
+        expect(hash[:node_id]).to eq(3)
+        42
+      end
+      runner.add_log(task_id: 1, entry: 'log', name: 'node-01')
+    end
+
+    it 'handles nil node returned from name lookup' do
+      allow(Legion::Data::Model::Node).to receive(:where).and_return(double(first: nil))
+      allow(Legion::Data::Model::TaskLog).to receive(:insert).and_return(42)
+      expect { runner.add_log(task_id: 1, entry: 'log', name: 'missing') }.not_to raise_error
     end
   end
 end

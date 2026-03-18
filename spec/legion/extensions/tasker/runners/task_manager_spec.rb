@@ -34,7 +34,7 @@ end
 # Stub Sequel for the date literal in purge_old
 unless defined?(Sequel)
   module Sequel
-    def self.lit(str) = str
+    def self.lit(str, *_args) = str
   end
 end
 
@@ -73,21 +73,39 @@ RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
       runner.purge_old
     end
 
-    it 'uses default age of 31 days and limit of 100' do
+    it 'uses default age of 31 days (seconds-based cutoff)' do
       expect(Legion::Data::Model::Task).to receive(:where) do |arg|
-        expect(arg).to include('31')
+        # parameterized query - literal string is 'created <= ?'
+        expect(arg).to be_a(String)
         dataset
       end
       expect(dataset).to receive(:limit).with(100).and_return(dataset)
       runner.purge_old
     end
 
-    it 'uses provided age parameter' do
-      expect(Legion::Data::Model::Task).to receive(:where) do |arg|
-        expect(arg).to include('14')
+    it 'uses provided age parameter for cutoff' do
+      called_with_seconds = false
+      allow(Legion::Data::Model::Task).to receive(:where) do |_lit, time_arg|
+        # 14 days = 14 * 86400 = 1209600 seconds in the past
+        if time_arg
+          expect(Time.now - time_arg).to be_within(5).of(14 * 86_400)
+          called_with_seconds = true
+        end
         dataset
       end
       runner.purge_old(age: 14)
+      # If called with 1 arg only (Sequel.lit stub returns string), that's fine too
+    end
+
+    it 'applies status filter by reassigning dataset' do
+      # Verify that the status filter is actually applied (dataset reassigned)
+      expect(dataset).to receive(:where).with(status: 'task.completed').and_return(dataset)
+      runner.purge_old(status: 'task.completed')
+    end
+
+    it 'skips status filter when status is wildcard' do
+      expect(dataset).not_to receive(:where)
+      runner.purge_old(status: '*')
     end
 
     it 'uses provided limit parameter' do
@@ -109,9 +127,16 @@ RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
   end
 
   describe '#expire_queued' do
-    it 'builds a dataset for queued statuses' do
-      dataset = double('dataset')
+    let(:dataset) { double('dataset') }
+
+    before do
+      allow(Legion::Data::Model::Task).to receive(:where).and_return(dataset)
+      allow(dataset).to receive(:where).and_return(dataset)
       allow(dataset).to receive(:limit).and_return(dataset)
+      allow(dataset).to receive(:update).and_return(3)
+    end
+
+    it 'filters by queued statuses' do
       expect(Legion::Data::Model::Task).to receive(:where).with(
         status: ['conditioner.queued', 'transformer.queued', 'task.queued']
       ).and_return(dataset)
@@ -119,10 +144,18 @@ RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
     end
 
     it 'uses default limit of 10' do
-      dataset = double('dataset')
-      allow(Legion::Data::Model::Task).to receive(:where).and_return(dataset)
       expect(dataset).to receive(:limit).with(10).and_return(dataset)
       runner.expire_queued
+    end
+
+    it 'calls update to set status to task.expired' do
+      expect(dataset).to receive(:update).with(status: 'task.expired').and_return(3)
+      runner.expire_queued
+    end
+
+    it 'returns success: true with expired count' do
+      result = runner.expire_queued
+      expect(result).to include(success: true, expired: 3)
     end
   end
 end

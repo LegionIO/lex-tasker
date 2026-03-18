@@ -90,6 +90,13 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Updater do
         expect(result).to include(success: true, changed: true, task_id: 1)
       end
 
+      it 'returns early with changed: false when no columns to update' do
+        allow(mock_task).to receive(:update)
+        result = runner.update_status(task_id: 1)
+        expect(result).to include(success: true, changed: false, task_id: 1)
+        expect(mock_task).not_to have_received(:update)
+      end
+
       it 'calls update with the status' do
         expect(mock_task).to receive(:update).with(hash_including(status: 'task.completed'))
         runner.update_status(task_id: 1, status: 'task.completed')
