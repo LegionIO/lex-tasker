@@ -10,11 +10,11 @@ module Legion
           end
 
           def check_subtask?
-            true
+            false
           end
 
           def generate_task?
-            true
+            false
           end
 
           def prefetch

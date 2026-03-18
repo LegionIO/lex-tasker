@@ -147,6 +147,23 @@ RSpec.describe 'CheckSubtask pure logic' do
       expect(result[:status]).to eq('task.delayed')
     end
 
+    it 'handles nil delay without raising (nil.zero? raises NoMethodError)' do
+      relationship = { delay: nil }
+      expect { test_obj.build_task_hash(relationship, {}) }.not_to raise_error
+    end
+
+    it 'treats nil delay as zero (conditioner.queued)' do
+      relationship = { delay: nil }
+      result = test_obj.build_task_hash(relationship, {})
+      expect(result[:status]).to eq('conditioner.queued')
+    end
+
+    it 'does not mutate the original relationship hash' do
+      relationship = { delay: 0, original_key: 'original' }
+      test_obj.build_task_hash(relationship, {})
+      expect(relationship).not_to have_key(:status)
+    end
+
     it 'sets parent_id from opts task_id' do
       relationship = { delay: 0 }
       result = test_obj.build_task_hash(relationship, { task_id: 42 })
@@ -157,6 +174,36 @@ RSpec.describe 'CheckSubtask pure logic' do
       relationship = { delay: 0 }
       result = test_obj.build_task_hash(relationship, { master_id: 10 })
       expect(result[:master_id]).to eq(10)
+    end
+  end
+
+  describe '#check_subtasks nil trigger guard' do
+    it 'returns early with subtasks: 0 when find_trigger returns nil' do
+      allow(test_obj).to receive(:find_trigger).and_return(nil)
+      result = test_obj.check_subtasks(runner_class: 'SomeRunner', function: 'run')
+      expect(result).to include(success: true, subtasks: 0)
+    end
+  end
+
+  describe '#dispatch_task result fan-out' do
+    it 'fans out when opts[:results] is an array (plural)' do
+      trigger = { runner_id: 1, function_id: 2 }
+      task_hash = { delay: 0, relationship_id: 1, function_id: 2, routing_key: 'ext.q.fn' }
+      results_array = [{ data: 1 }, { data: 2 }]
+      send_calls = []
+      allow(test_obj).to receive(:send_task) { |**opts| send_calls << opts }
+      test_obj.dispatch_task(task_hash, trigger, { results: results_array })
+      expect(send_calls.length).to eq(2)
+    end
+
+    it 'fans out when opts[:result] is an array (singular)' do
+      trigger = { runner_id: 1, function_id: 2 }
+      task_hash = { delay: 0, relationship_id: 1, function_id: 2, routing_key: 'ext.q.fn' }
+      results_array = [{ data: 1 }, { data: 2 }]
+      send_calls = []
+      allow(test_obj).to receive(:send_task) { |**opts| send_calls << opts }
+      test_obj.dispatch_task(task_hash, trigger, { result: results_array })
+      expect(send_calls.length).to eq(2)
     end
   end
 end

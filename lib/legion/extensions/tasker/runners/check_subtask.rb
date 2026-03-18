@@ -12,6 +12,7 @@ module Legion
 
           def check_subtasks(runner_class:, function:, **opts)
             trigger = find_trigger(runner_class: runner_class, function: function)
+            return { success: true, subtasks: 0 } unless trigger
 
             find_subtasks(trigger_id: trigger[:function_id]).each do |relationship|
               next unless chain_matches?(relationship, opts)
@@ -28,8 +29,8 @@ module Legion
           end
 
           def build_task_hash(relationship, opts)
-            task_hash = relationship
-            task_hash[:status] = relationship[:delay].zero? ? 'conditioner.queued' : 'task.delayed'
+            task_hash = relationship.dup
+            task_hash[:status] = relationship[:delay].to_i.zero? ? 'conditioner.queued' : 'task.delayed'
             task_hash[:payload] = opts
             task_hash[:master_id] = resolve_master_id(opts)
             task_hash[:parent_id] = opts[:task_id] if opts.key?(:task_id)
@@ -56,9 +57,10 @@ module Legion
 
           def dispatch_task(task_hash, trigger, opts)
             trigger_info = { trigger_runner_id: trigger[:runner_id], trigger_function_id: trigger[:function_id] }
+            results_value = opts[:result] || opts[:results]
 
-            if opts[:result].is_a?(Array)
-              opts[:result].each do |result|
+            if results_value.is_a?(Array)
+              results_value.each do |result|
                 send_task(results: result, **trigger_info, **task_hash)
               end
             else
@@ -83,7 +85,6 @@ module Legion
                                1
                              end
 
-            # opts[:task_id] = Legion::Runner::Status.generate_task_id(**opts)[:task_id]
             opts[:task_id] = insert_task(**opts)
             return { status: true } unless opts[:delay].zero?
 
