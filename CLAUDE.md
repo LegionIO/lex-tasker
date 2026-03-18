@@ -10,7 +10,7 @@ Legion Extension that manages the full lifecycle of tasks within the framework. 
 
 **GitHub**: https://github.com/LegionIO/lex-tasker
 **License**: MIT
-**Version**: 0.2.1
+**Version**: 0.2.3
 
 ## Architecture
 
