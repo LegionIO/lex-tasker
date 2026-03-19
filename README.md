@@ -24,6 +24,17 @@ When a task completes, its runner calls `check_subtasks` via the task exchange. 
 
 Delayed tasks (those with `relationship_delay` or `task_delay`) are stored in the database with status `task.delayed` and dispatched by the `FetchDelayed` runner once their delay period has elapsed.
 
+## Standalone Client
+
+`Legion::Extensions::Tasker::Client` provides access to the `TaskFinder` helper for programmatic task lookup:
+
+```ruby
+require 'legion/extensions/tasker/client'
+client = Legion::Extensions::Tasker::Client.new
+```
+
+Accepts an optional `data_model:` kwarg to inject a mock data model for testing.
+
 ## Requirements
 
 - Ruby >= 3.4

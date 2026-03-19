@@ -30,9 +30,8 @@ Legion::Extensions::Tasker
 │   ├── Updater            # update_status: update task columns in DB
 │   └── Log                # add_log, delete_log, delete_task_logs, delete_node_logs, delete_all
 ├── Helpers/
-│   ├── Base               # Shared helper utilities
-│   ├── FetchDelayed       # Delayed task query helpers
-│   └── FindSubtask        # Subtask relationship lookup helpers
+│   └── TaskFinder         # Subtask relationship lookup and task dispatch helpers
+├── Client                 # Standalone client including TaskFinder helper; accepts injected data_model
 └── Transport/
     ├── Exchanges/Task     # Task exchange
     ├── Queues/
