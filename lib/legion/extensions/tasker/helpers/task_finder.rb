@@ -6,8 +6,8 @@ module Legion
       module Helpers
         module TaskFinder
           def find_trigger(runner_class:, function:, **)
-            cache_key = "tasker:find_trigger:#{runner_class}:#{function}"
-            cached = Legion::Cache.get(cache_key)
+            cache_key = "find_trigger:#{runner_class}:#{function}"
+            cached = cache_get(cache_key)
             return cached unless cached.nil?
 
             result = Legion::Data::Model::Function
@@ -19,13 +19,13 @@ module Legion
                              Sequel[:runners][:namespace])
                      .first
 
-            Legion::Cache.set(cache_key, result) if result
+            cache_set(cache_key, result) if result
             result
           end
 
           def find_subtasks(trigger_id:, **)
-            cache_key = "tasker:find_subtasks:#{trigger_id}"
-            cached = Legion::Cache.get(cache_key)
+            cache_key = "find_subtasks:#{trigger_id}"
+            cached = cache_get(cache_key)
             return cached unless cached.nil?
 
             results = subtask_query(trigger_id).all.map do |row|
@@ -33,7 +33,7 @@ module Legion
               row
             end
 
-            Legion::Cache.set(cache_key, results, 5) if results.is_a?(Array) && results.any?
+            cache_set(cache_key, results, ttl: 5) if results.is_a?(Array) && results.any?
             results
           end
 

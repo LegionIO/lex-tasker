@@ -99,7 +99,7 @@ module Legion
             insert_hash = { relationship_id: relationship_id, function_id: function_id, status: status }
             insert_hash[:master_id] = master_id.is_a?(Integer) ? master_id : (parent_id if parent_id.is_a?(Integer))
             insert_hash[:parent_id] = parent_id if parent_id.is_a?(Integer)
-            insert_hash[:payload] = Legion::JSON.dump(opts)
+            insert_hash[:payload] = json_dump(opts)
             Legion::Data::Model::Task.insert(insert_hash)
           end
         end

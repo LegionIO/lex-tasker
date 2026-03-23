@@ -164,13 +164,13 @@ RSpec.describe Legion::Extensions::Tasker::Client do
   describe '#find_trigger delegation' do
     it 'returns cached result when cache has value' do
       cached = { function_id: 1, runner_id: 2, namespace: 'MyRunner' }
-      allow(Legion::Cache).to receive(:get).and_return(cached)
+      allow(client).to receive(:cache_get).and_return(cached)
       result = client.find_trigger(runner_class: 'MyRunner', function: 'run')
       expect(result).to eq(cached)
     end
 
     it 'queries DB when cache empty' do
-      allow(Legion::Cache).to receive(:get).and_return(nil)
+      allow(client).to receive(:cache_get).and_return(nil)
       chain = double('chain')
       allow(Legion::Data::Model::Function).to receive(:join).and_return(chain)
       allow(chain).to receive(:where).and_return(chain)
@@ -184,13 +184,13 @@ RSpec.describe Legion::Extensions::Tasker::Client do
   describe '#find_subtasks delegation' do
     it 'returns cached subtasks when available' do
       cached = [{ relationship_id: 1 }]
-      allow(Legion::Cache).to receive(:get).and_return(cached)
+      allow(client).to receive(:cache_get).and_return(cached)
       result = client.find_subtasks(trigger_id: 42)
       expect(result).to eq(cached)
     end
 
     it 'returns empty array when no subtasks found' do
-      allow(Legion::Cache).to receive(:get).and_return(nil)
+      allow(client).to receive(:cache_get).and_return(nil)
       chain = double('chain')
       allow(Legion::Data::Model::Relationship).to receive(:join).and_return(chain)
       allow(chain).to receive(:join).and_return(chain)

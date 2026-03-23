@@ -117,7 +117,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     context 'when cache returns a result' do
       it 'returns the cached result without querying the DB' do
         cached_result = { function_id: 1, runner_id: 2, namespace: 'MyExt::Runners::MyRunner' }
-        allow(Legion::Cache).to receive(:get).and_return(cached_result)
+        allow(finder).to receive(:cache_get).and_return(cached_result)
         expect(Legion::Data::Model::Function).not_to receive(:join)
         result = finder.find_trigger(runner_class: 'MyExt::Runners::MyRunner', function: 'run')
         expect(result).to eq(cached_result)
@@ -125,7 +125,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     end
 
     context 'when cache is empty' do
-      before { allow(Legion::Cache).to receive(:get).and_return(nil) }
+      before { allow(finder).to receive(:cache_get).and_return(nil) }
 
       it 'queries the DB and caches the result' do
         db_result = { function_id: 5, runner_id: 3, namespace: 'SomeExt::Runners::Run' }
@@ -134,7 +134,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
         allow(chain).to receive(:where).and_return(chain)
         allow(chain).to receive(:select).and_return(chain)
         allow(chain).to receive(:first).and_return(db_result)
-        expect(Legion::Cache).to receive(:set).with(anything, db_result)
+        expect(finder).to receive(:cache_set).with(anything, db_result)
         result = finder.find_trigger(runner_class: 'SomeExt::Runners::Run', function: 'run')
         expect(result).to eq(db_result)
       end
@@ -145,7 +145,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
         allow(chain).to receive(:where).and_return(chain)
         allow(chain).to receive(:select).and_return(chain)
         allow(chain).to receive(:first).and_return(nil)
-        expect(Legion::Cache).not_to receive(:set)
+        expect(finder).not_to receive(:cache_set)
         result = finder.find_trigger(runner_class: 'Missing', function: 'missing')
         expect(result).to be_nil
       end
@@ -156,7 +156,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     context 'when cache returns a result' do
       it 'returns cached results without querying DB' do
         cached = [{ relationship_id: 1 }]
-        allow(Legion::Cache).to receive(:get).and_return(cached)
+        allow(finder).to receive(:cache_get).and_return(cached)
         expect(Legion::Data::Model::Relationship).not_to receive(:join)
         result = finder.find_subtasks(trigger_id: 42)
         expect(result).to eq(cached)
@@ -164,7 +164,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     end
 
     context 'when cache is empty' do
-      before { allow(Legion::Cache).to receive(:get).and_return(nil) }
+      before { allow(finder).to receive(:cache_get).and_return(nil) }
 
       it 'queries DB and adds runner_routing_key to each row' do
         row = { exchange: 'myext', queue: 'runner', function: 'run' }
@@ -174,7 +174,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
         allow(chain).to receive(:where).and_return(chain)
         allow(chain).to receive(:select).and_return(chain)
         allow(chain).to receive(:all).and_return([row])
-        allow(Legion::Cache).to receive(:set)
+        allow(finder).to receive(:cache_set)
         result = finder.find_subtasks(trigger_id: 1)
         expect(result.first[:runner_routing_key]).to eq('myext.runner.run')
       end
@@ -187,7 +187,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
         allow(chain).to receive(:where).and_return(chain)
         allow(chain).to receive(:select).and_return(chain)
         allow(chain).to receive(:all).and_return([row])
-        expect(Legion::Cache).to receive(:set).with(anything, anything, 5)
+        expect(finder).to receive(:cache_set).with(anything, anything, ttl: 5)
         finder.find_subtasks(trigger_id: 2)
       end
 
@@ -198,7 +198,7 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
         allow(chain).to receive(:where).and_return(chain)
         allow(chain).to receive(:select).and_return(chain)
         allow(chain).to receive(:all).and_return([])
-        expect(Legion::Cache).not_to receive(:set)
+        expect(finder).not_to receive(:cache_set)
         result = finder.find_subtasks(trigger_id: 3)
         expect(result).to eq([])
       end

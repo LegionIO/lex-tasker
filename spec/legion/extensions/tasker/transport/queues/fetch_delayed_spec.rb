@@ -2,19 +2,10 @@
 
 require 'spec_helper'
 
-module Legion
-  module Transport
-    class Queue
-      def queue_name; end
-      def queue_options = {}
-    end
-  end
-end
-
 require 'legion/extensions/tasker/transport/queues/fetch_delayed'
 
 RSpec.describe Legion::Extensions::Tasker::Transport::Queues::FetchDelayed do
-  let(:queue) { described_class.new }
+  let(:queue) { described_class.allocate }
 
   it 'sets queue name to task.fetch_delayed' do
     expect(queue.queue_name).to eq('task.fetch_delayed')

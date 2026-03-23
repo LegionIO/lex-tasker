@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.1] - 2026-03-22
+
+### Changed
+- Add legion-cache, legion-crypt, legion-data, legion-json, legion-logging, legion-settings, legion-transport as runtime dependencies
+- Replace direct Legion::Cache.get/set calls with cache_get/cache_set helper methods in Helpers::TaskFinder
+- Replace direct Legion::JSON.dump call with json_dump helper in Runners::CheckSubtask
+- Update spec_helper with real sub-gem helper stubs and actor base class includes
+- Update specs to stub cache_get/cache_set on instance instead of Legion::Cache class methods
+- Update transport queue specs to use allocate instead of new to bypass real Transport::Queue initialize
+
 ## [0.3.0] - 2026-03-18
 
 ### Added
