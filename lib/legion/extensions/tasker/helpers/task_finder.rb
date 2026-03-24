@@ -5,6 +5,22 @@ module Legion
     module Tasker
       module Helpers
         module TaskFinder
+          def cache_get(key)
+            return nil unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && Legion::Cache.connected?
+
+            Legion::Cache.get("tasker:#{key}")
+          rescue StandardError
+            nil
+          end
+
+          def cache_set(key, value, ttl: 60)
+            return unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && Legion::Cache.connected?
+
+            Legion::Cache.set("tasker:#{key}", value, ttl)
+          rescue StandardError
+            nil
+          end
+
           def find_trigger(runner_class:, function:, **)
             cache_key = "find_trigger:#{runner_class}:#{function}"
             cached = cache_get(cache_key)

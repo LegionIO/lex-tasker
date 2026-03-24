@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.2] - 2026-03-24
+
+### Fixed
+- add self-contained `cache_get`/`cache_set` methods to TaskFinder with graceful fallback when legion-cache is unavailable — fixes `undefined method 'cache_get'` crash in CheckSubtask runner
+
 ## [0.3.1] - 2026-03-22
 
 ### Changed
