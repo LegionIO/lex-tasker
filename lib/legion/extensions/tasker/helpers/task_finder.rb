@@ -22,6 +22,8 @@ module Legion
           end
 
           def find_trigger(runner_class:, function:, **)
+            return nil unless defined?(Legion::Data::Model::Function)
+
             cache_key = "find_trigger:#{runner_class}:#{function}"
             cached = cache_get(cache_key)
             return cached unless cached.nil?
@@ -40,6 +42,8 @@ module Legion
           end
 
           def find_subtasks(trigger_id:, **)
+            return [] unless defined?(Legion::Data::Model::Relationship)
+
             cache_key = "find_subtasks:#{trigger_id}"
             cached = cache_get(cache_key)
             return cached unless cached.nil?
@@ -54,6 +58,8 @@ module Legion
           end
 
           def find_delayed(**)
+            return [] unless defined?(Legion::Data::Model::Task)
+
             Legion::Data::Model::Task
               .join(:functions, id: :function_id)
               .join(:runners, id: Sequel[:functions][:runner_id])

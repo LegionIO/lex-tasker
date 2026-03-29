@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.3] - 2026-03-28
+
+### Fixed
+- guard `find_trigger`, `find_subtasks`, `find_delayed`, and `insert_task` against undefined `Legion::Data::Model` constants — prevents `NameError` crash when legion-data connects but models fail to load (e.g., PG migration privilege errors)
+
 ## [0.3.2] - 2026-03-24
 
 ### Fixed

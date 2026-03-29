@@ -92,6 +92,8 @@ module Legion
           end
 
           def insert_task(relationship_id:, function_id:, **opts)
+            return nil unless defined?(Legion::Data::Model::Task)
+
             status = opts.fetch(:status, 'task.queued')
             master_id = opts[:master_id]
             parent_id = opts[:parent_id]
