@@ -10,7 +10,7 @@ Legion Extension that manages the full lifecycle of tasks within the framework. 
 
 **GitHub**: https://github.com/LegionIO/lex-tasker
 **License**: MIT
-**Version**: 0.3.0
+**Version**: 0.3.2
 
 ## Architecture
 
@@ -68,6 +68,11 @@ Legion::Extensions::Tasker
 ## Delayed Task Flow
 
 `FetchDelayedPush` (Every actor, every 1 second) publishes a trigger via `push`. `FetchDelayed` (Subscription actor, `fetch` function) polls DB for tasks in `task.delayed` status, checks if `relationship_delay` or `task_delay` has elapsed, then dispatches them. Routing key is chosen based on whether conditions or transformations are present.
+
+## Known Behaviour Notes
+
+- `Helpers::TaskFinder` defines `cache_get`/`cache_set` as self-contained methods with graceful fallback when `legion-cache` is unavailable. This prevents `undefined method 'cache_get'` crashes in `CheckSubtask` when the cache gem is not loaded.
+- Queue file `task_mananger.rb` has a typo ("mananger"). Filename only — does not affect functionality.
 
 ## Testing
 
