@@ -17,7 +17,7 @@ module Legion
         end
 
         def log
-          @log ||= defined?(Legion::Logging) ? Legion::Logging : Logger.new($stdout)
+          @log ||= defined?(Legion::Logging) ? Legion::Logging : Logger.new($stdout) # rubocop:disable Legion/HelperMigration/LoggingGuard
         end
 
         def settings
