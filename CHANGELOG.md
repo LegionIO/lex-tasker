@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.6] - 2026-03-30
+
+### Fixed
+- fix recursive cache_get/cache_set regression — restore Legion::Cache.get/set calls with rubocop:disable comments to prevent future auto-correction (#3)
+
 ## [0.3.5] - 2026-03-30
 
 ### Changed

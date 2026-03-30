@@ -112,6 +112,58 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
     obj
   end
 
+  describe '#cache_get' do
+    it 'delegates to Legion::Cache.get, not to itself' do
+      allow(Legion::Cache).to receive(:connected?).and_return(true)
+      allow(finder).to receive(:cache_connected?).and_return(true)
+      allow(Legion::Cache).to receive(:get).with('tasker:my_key').and_return('cached_value')
+      expect(finder.cache_get('my_key')).to eq('cached_value')
+    end
+
+    it 'returns nil when cache is not connected' do
+      allow(Legion::Cache).to receive(:connected?).and_return(false)
+      allow(finder).to receive(:cache_connected?).and_return(false)
+      expect(finder.cache_get('my_key')).to be_nil
+    end
+
+    it 'returns nil when Legion::Cache.get raises' do
+      allow(Legion::Cache).to receive(:connected?).and_return(true)
+      allow(finder).to receive(:cache_connected?).and_return(true)
+      allow(Legion::Cache).to receive(:get).and_raise(StandardError, 'boom')
+      expect(finder.cache_get('my_key')).to be_nil
+    end
+  end
+
+  describe '#cache_set' do
+    it 'delegates to Legion::Cache.set, not to itself' do
+      allow(Legion::Cache).to receive(:connected?).and_return(true)
+      allow(finder).to receive(:cache_connected?).and_return(true)
+      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', 60)
+      finder.cache_set('my_key', 'value')
+    end
+
+    it 'passes custom ttl to Legion::Cache.set' do
+      allow(Legion::Cache).to receive(:connected?).and_return(true)
+      allow(finder).to receive(:cache_connected?).and_return(true)
+      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', 120)
+      finder.cache_set('my_key', 'value', ttl: 120)
+    end
+
+    it 'returns nil when cache is not connected' do
+      allow(Legion::Cache).to receive(:connected?).and_return(false)
+      allow(finder).to receive(:cache_connected?).and_return(false)
+      expect(Legion::Cache).not_to receive(:set)
+      finder.cache_set('my_key', 'value')
+    end
+
+    it 'returns nil when Legion::Cache.set raises' do
+      allow(Legion::Cache).to receive(:connected?).and_return(true)
+      allow(finder).to receive(:cache_connected?).and_return(true)
+      allow(Legion::Cache).to receive(:set).and_raise(StandardError, 'boom')
+      expect(finder.cache_set('my_key', 'value')).to be_nil
+    end
+  end
+
   describe '#find_trigger' do
     context 'when cache returns a result' do
       it 'returns the cached result without querying the DB' do
