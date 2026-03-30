@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.4] - 2026-03-29
+
+### Removed
+- Orphaned `Transport::Queues::LexRegister` queue class — queue ownership moved to lex-lex where the Register runner and consumer live
+
 ## [0.3.3] - 2026-03-28
 
 ### Fixed

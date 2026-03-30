@@ -7,9 +7,7 @@ require 'legion/extensions/tasker/transport/queues/subtask'
 require 'legion/extensions/tasker/transport/queues/task_log'
 require 'legion/extensions/tasker/transport/queues/task_mananger'
 require 'legion/extensions/tasker/transport/queues/updater'
-require 'legion/extensions/tasker/transport/queues/lex_register'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe 'Tasker Transport Queues' do
   describe Legion::Extensions::Tasker::Transport::Queues::CheckSubtask do
     subject(:queue) { described_class.allocate }
@@ -63,17 +61,4 @@ RSpec.describe 'Tasker Transport Queues' do
       expect(queue.queue_name).to eq('task.updater')
     end
   end
-
-  describe Legion::Extensions::Tasker::Transport::Queues::LexRegister do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to lex.register' do
-      expect(queue.queue_name).to eq('lex.register')
-    end
-
-    it 'sets auto_delete to false' do
-      expect(queue.queue_options[:auto_delete]).to eq(false)
-    end
-  end
 end
-# rubocop:enable Metrics/BlockLength
