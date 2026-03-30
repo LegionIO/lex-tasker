@@ -86,7 +86,6 @@ end
 
 require 'legion/extensions/tasker/client'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Client do
   let(:mock_model) do
     mod = Module.new
@@ -216,4 +215,3 @@ RSpec.describe Legion::Extensions::Tasker::Client do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

@@ -31,7 +31,6 @@ end
 
 require 'legion/extensions/tasker/runners/updater'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Runners::Updater do
   let(:runner) do
     klass = Class.new do
@@ -133,4 +132,3 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Updater do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

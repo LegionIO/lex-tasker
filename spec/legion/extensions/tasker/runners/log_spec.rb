@@ -45,7 +45,6 @@ end
 
 require 'legion/extensions/tasker/runners/log'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Runners::Log do
   let(:runner) do
     klass = Class.new do
@@ -196,4 +195,3 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Log do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

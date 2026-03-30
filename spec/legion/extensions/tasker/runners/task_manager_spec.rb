@@ -40,7 +40,6 @@ end
 
 require 'legion/extensions/tasker/runners/task_manager'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
   let(:runner) do
     klass = Class.new do
@@ -159,4 +158,3 @@ RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

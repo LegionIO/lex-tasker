@@ -6,18 +6,18 @@ module Legion
       module Helpers
         module TaskFinder
           def cache_get(key)
-            return nil unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && Legion::Cache.connected?
+            return nil unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && cache_connected?
 
-            Legion::Cache.get("tasker:#{key}")
-          rescue StandardError
+            cache_get("tasker:#{key}")
+          rescue StandardError => _e
             nil
           end
 
           def cache_set(key, value, ttl: 60)
-            return unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && Legion::Cache.connected?
+            return unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && cache_connected?
 
-            Legion::Cache.set("tasker:#{key}", value, ttl)
-          rescue StandardError
+            cache_set("tasker:#{key}", value, ttl)
+          rescue StandardError => _e
             nil
           end
 

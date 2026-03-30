@@ -45,7 +45,6 @@ require 'legion/extensions/tasker/actors/log'
 require 'legion/extensions/tasker/actors/task_manager'
 require 'legion/extensions/tasker/actors/updater'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe 'Tasker Actors' do
   describe Legion::Extensions::Tasker::Actor::CheckSubtask do
     subject(:actor) { described_class.allocate }
@@ -195,4 +194,3 @@ RSpec.describe 'Tasker Actors' do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength

@@ -47,7 +47,6 @@ end
 
 require 'legion/extensions/tasker/runners/fetch_delayed'
 
-# rubocop:disable Metrics/BlockLength
 RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
   let(:runner) do
     klass = Class.new do
@@ -218,4 +217,3 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
     end
   end
 end
-# rubocop:enable Metrics/BlockLength
