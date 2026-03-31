@@ -78,7 +78,7 @@ module Legion
           def send_task(**opts)
             opts[:results] = opts[:result] if opts.key?(:result) && !opts.key?(:results)
             opts[:success] = if opts.key?(:result) && opts.key?(:success)
-                               opts[:result][:success]
+                               opts[:result].is_a?(Hash) ? opts[:result][:success] : opts[:success]
                              elsif opts.key?(:success)
                                opts[:success]
                              else
