@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.7] - 2026-03-30
+
+### Fixed
+- guard against `no implicit conversion of Symbol into Integer` in `send_task` — check `opts[:result].is_a?(Hash)` before accessing `[:success]` in both CheckSubtask and FetchDelayed runners
+
 ## [0.3.6] - 2026-03-30
 
 ### Fixed
