@@ -12,7 +12,7 @@ module Legion
 
           def check_subtasks(runner_class:, function:, **opts)
             trigger = find_trigger(runner_class: runner_class, function: function)
-            return { success: true, subtasks: 0 } unless trigger
+            return { success: true, subtasks: 0 } unless trigger.is_a?(Hash)
 
             find_subtasks(trigger_id: trigger[:function_id]).each do |relationship|
               next unless chain_matches?(relationship, opts)

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.8] - 2026-03-31
+
+### Fixed
+- type guard cache returns in `find_trigger` (must be Hash) and `find_subtasks` (must be Array) — cache deserialization can return String instead of Hash, causing `TypeError: no implicit conversion of Symbol into Integer`
+- `check_subtasks` guard changed from `unless trigger` to `unless trigger.is_a?(Hash)` for same reason
+
 ## [0.3.7] - 2026-03-30
 
 ### Fixed
