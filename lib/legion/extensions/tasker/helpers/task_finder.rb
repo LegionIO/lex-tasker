@@ -26,7 +26,7 @@ module Legion
 
             cache_key = "find_trigger:#{runner_class}:#{function}"
             cached = cache_get(cache_key)
-            return cached unless cached.nil?
+            return cached if cached.is_a?(Hash)
 
             result = Legion::Data::Model::Function
                      .join(:runners, id: :runner_id)
@@ -46,7 +46,7 @@ module Legion
 
             cache_key = "find_subtasks:#{trigger_id}"
             cached = cache_get(cache_key)
-            return cached unless cached.nil?
+            return cached if cached.is_a?(Array)
 
             results = subtask_query(trigger_id).all.map do |row|
               row[:runner_routing_key] = "#{row[:exchange]}.#{row[:queue]}.#{row[:function]}"
