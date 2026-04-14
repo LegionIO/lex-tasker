@@ -46,7 +46,7 @@ module Legion
             if task[:conditions].is_a?(String) && task[:conditions].length > 4
               'task.subtask.conditioner'
             elsif task[:transformation].is_a?(String) && task[:transformation].length > 4
-              'task.subtask.transformation'
+              'task.subtask.transform'
             else
               task[:runner_routing_key]
             end
@@ -55,7 +55,7 @@ module Legion
           def update_delayed_status(task_id, routing_key)
             status = case routing_key
                      when 'task.subtask.conditioner' then 'conditioner.queued'
-                     when 'task.subtask.transformation' then 'transformer.queued'
+                     when 'task.subtask.transform' then 'transformer.queued'
                      else 'task.queued'
                      end
             task_update(task_id, status)

@@ -49,7 +49,7 @@ module Legion
             if relationship[:conditions].is_a?(String) && relationship[:conditions].length > 4
               'task.subtask.conditioner'
             elsif relationship[:transformation].is_a?(String) && relationship[:transformation].length > 4
-              'task.subtask.transformation'
+              'task.subtask.transform'
             else
               relationship[:runner_routing_key]
             end

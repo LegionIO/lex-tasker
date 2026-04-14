@@ -93,7 +93,7 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
 
     it 'returns transformation key when transformation present but no conditions' do
       task = { conditions: nil, transformation: '{"key":"<%= val %>"}', runner_routing_key: 'ext.runner.func' }
-      expect(runner.delayed_routing_key(task)).to eq('task.subtask.transformation')
+      expect(runner.delayed_routing_key(task)).to eq('task.subtask.transform')
     end
 
     it 'returns runner routing key when neither conditions nor transformation' do
@@ -124,7 +124,7 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
 
     it 'sets status to transformer.queued for transformation routing key' do
       expect(runner).to receive(:task_update).with(2, 'transformer.queued')
-      runner.update_delayed_status(2, 'task.subtask.transformation')
+      runner.update_delayed_status(2, 'task.subtask.transform')
     end
 
     it 'sets status to task.queued for any other routing key' do

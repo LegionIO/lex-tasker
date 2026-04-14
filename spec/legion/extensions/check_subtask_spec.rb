@@ -95,7 +95,7 @@ RSpec.describe 'CheckSubtask pure logic' do
 
     it 'returns transformation key when transformation present but no conditions' do
       relationship = { conditions: nil, transformation: '{"key":"<%= val %>"}', runner_routing_key: 'ext.runner.func' }
-      expect(test_obj.subtask_routing_key(relationship)).to eq('task.subtask.transformation')
+      expect(test_obj.subtask_routing_key(relationship)).to eq('task.subtask.transform')
     end
 
     it 'returns runner routing key when neither conditions nor transformation' do
