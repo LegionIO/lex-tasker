@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.10] - 2026-04-13
+
+### Added
+- Select `engine` column from `relationships` in `TaskFinder#subtask_query` — propagates engine selection through `build_task_hash` to SubTask dispatch
+
+## [0.3.9] - 2026-03-31
+
+### Fixed
+- Version bump from previous branch (fleet/ws-00h runner fixes)
+
 ## [0.3.8] - 2026-03-31
 
 ### Fixed

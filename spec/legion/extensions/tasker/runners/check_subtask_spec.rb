@@ -48,4 +48,20 @@ RSpec.describe Legion::Extensions::Tasker::Runners::CheckSubtask do
       end
     end
   end
+
+  describe '#build_task_hash' do
+    it 'includes engine from the relationship' do
+      relationship = {
+        delay:              0,
+        conditions:         nil,
+        transformation:     '{"template":"test"}',
+        engine:             'llm',
+        runner_routing_key: 'lex.transformer.runners.transform.transform'
+      }
+      opts = { task_id: 1 }
+
+      task_hash = subject.build_task_hash(relationship, opts)
+      expect(task_hash[:engine]).to eq('llm')
+    end
+  end
 end
