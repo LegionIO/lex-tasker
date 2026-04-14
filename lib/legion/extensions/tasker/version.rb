@@ -3,7 +3,7 @@
 module Legion
   module Extensions
     module Tasker
-      VERSION = '0.3.9'
+      VERSION = '0.3.10'
     end
   end
 end
