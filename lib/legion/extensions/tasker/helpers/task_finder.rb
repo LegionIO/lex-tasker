@@ -16,7 +16,7 @@ module Legion
           def cache_set(key, value, ttl: 60)
             return unless defined?(Legion::Cache) && Legion::Cache.respond_to?(:connected?) && cache_connected?
 
-            Legion::Cache.set("tasker:#{key}", value, ttl) # rubocop:disable Legion/HelperMigration/DirectCache
+            Legion::Cache.set("tasker:#{key}", value, ttl: ttl) # rubocop:disable Legion/HelperMigration/DirectCache
           rescue StandardError => _e
             nil
           end
