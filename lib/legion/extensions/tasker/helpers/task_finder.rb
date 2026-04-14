@@ -104,6 +104,7 @@ module Legion
                 Sequel[:relationships][:action_id],
                 Sequel[:relationships][:conditions],
                 Sequel[:relationships][:transformation],
+                Sequel[:relationships][:engine],
                 Sequel[:runners][:namespace],
                 Sequel[:runners][:id].as(:runner_id),
                 Sequel[:runners][:queue],
