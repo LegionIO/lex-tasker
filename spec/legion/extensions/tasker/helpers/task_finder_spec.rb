@@ -135,17 +135,17 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
   end
 
   describe '#cache_set' do
-    it 'delegates to Legion::Cache.set, not to itself' do
+    it 'delegates to Legion::Cache.set with keyword ttl' do
       allow(Legion::Cache).to receive(:connected?).and_return(true)
       allow(finder).to receive(:cache_connected?).and_return(true)
-      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', 60)
+      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', ttl: 60)
       finder.cache_set('my_key', 'value')
     end
 
-    it 'passes custom ttl to Legion::Cache.set' do
+    it 'passes custom ttl as keyword to Legion::Cache.set' do
       allow(Legion::Cache).to receive(:connected?).and_return(true)
       allow(finder).to receive(:cache_connected?).and_return(true)
-      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', 120)
+      expect(Legion::Cache).to receive(:set).with('tasker:my_key', 'value', ttl: 120)
       finder.cache_set('my_key', 'value', ttl: 120)
     end
 
