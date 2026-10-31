@@ -42,7 +42,7 @@ module Legion
           private
 
           def tasker_child_depth(parent:, context:, count:)
-            policy = task_execution_settings.fetch(:execution)
+            policy = settings.fetch(:execution)
             depth = [Integer(parent[:depth]), Integer(context.fetch(:depth, parent[:depth]))].max + 1
             raise ArgumentError, 'task chain depth exceeds configured maximum' if depth > policy.fetch(:max_depth)
             raise ArgumentError, 'task fanout exceeds configured maximum' if count > policy.fetch(:max_fanout)
@@ -52,7 +52,7 @@ module Legion
 
           def tasker_create_child(relationship:, parent:, trigger:, result:, index:, depth:, context:)
             delay = tasker_delay_seconds(delay: relationship[:delay])
-            metadata = context.slice(*task_execution_settings.fetch(:protocol).fetch(:metadata_fields).map(&:to_sym))
+            metadata = context.slice(*Legion::Transport::TaskProtocol::METADATA_FIELDS)
                               .except(:task_id, :attempt_id, :execution_token, :message_id)
             envelope = metadata.merge(relationship.slice(:relationship_id, :chain_id, :function_id, :function, :runner_class,
                                                          :runner_routing_key, :debug, :conditions, :transformation, :engine, :schema, :engine_options).compact)

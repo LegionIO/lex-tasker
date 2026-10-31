@@ -89,7 +89,7 @@ module Legion
 
           def delayed_migration_envelope(task:, snapshot:)
             parent = snapshot.fetch(:payload)
-            fields = task_execution_settings.fetch(:protocol).fetch(:metadata_fields).map(&:to_sym)
+            fields = Legion::Transport::TaskProtocol::METADATA_FIELDS
             envelope = parent.slice(*fields).merge(snapshot.except(:payload, :delay, :status, :success)).except(:attempt_id, :execution_token)
             envelope.merge!(task_id: task[:id], function_id: task[:function_id], relationship_id: task[:relationship_id],
                             parent_id: task[:parent_id], master_id: task[:master_id], depth: snapshot.fetch(:depth, task[:depth]))

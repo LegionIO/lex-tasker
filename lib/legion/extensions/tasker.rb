@@ -3,7 +3,7 @@
 require 'legion/extensions/tasker/version'
 require 'legion/settings'
 require 'legion/settings/helper'
-require 'legion/settings/task_execution'
+require 'legion/transport/task_protocol'
 require 'legion/logging/helper'
 
 module Legion
@@ -25,6 +25,8 @@ module Legion
           delayed_batch_size:            100,
           default_delay_seconds:         0,
           empty_templates:               ['', '{}', '[]', 'null'],
+          execution:                     { max_depth: 100, max_fanout: 1000 },
+          outbox:                        { poll_interval_seconds: 1 },
           housekeeping:                  {
             purge_age_seconds:  2_678_400,
             purge_limit:        100,

@@ -11,8 +11,9 @@
 ### Changed
 - Immediate and delayed tasks share one stored dispatch envelope; delayed polling no longer reconstructs or loses the original input and policy.
 - Status updates, queue expiry, and abandoned execution recovery use guarded persistence transitions; old queued events cannot overwrite terminal results.
-- All task lifecycle policy and routing use shared task-execution settings and extension settings helpers.
-- Require legion-settings 1.5.0, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
+- Keep depth/fanout and outbox polling policy in Tasker-local settings; use immutable Transport task-protocol identities and Data dispatch statuses across nodes.
+- Use Transport-owned `publish!` defaults; Data migration 144 stores durable execution policy independently of local settings.
+- Require legion-settings 1.4.3, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
 - Standalone client uses real database models and settings rather than an unused model injection or fake logging/settings implementations.
 
 ### Fixed

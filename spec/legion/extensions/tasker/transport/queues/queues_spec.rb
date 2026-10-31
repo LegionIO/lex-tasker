@@ -5,12 +5,12 @@ require 'legion/extensions/tasker/transport/queues/check_subtask'
 require 'legion/extensions/tasker/transport/queues/fetch_delayed'
 
 RSpec.describe 'Tasker queue policy' do
-  it 'keeps continuation consumers aligned with the configured publication route' do
+  it 'keeps continuation consumers on the canonical route despite obsolete local overrides' do
     Legion::Settings.with_overlay(task_execution: { routes: { check_subtask: 'custom.continue' } }) do
       queue = Legion::Extensions::Tasker::Transport::Queues::CheckSubtask.allocate
       message = Legion::Transport::Messages::CheckSubtask.new
       expect(queue.queue_name).to eq(message.routing_key)
-      expect(queue.queue_name).to eq('custom.continue')
+      expect(queue.queue_name).to eq('task.subtask.check')
     end
   end
 

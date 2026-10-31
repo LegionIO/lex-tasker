@@ -19,7 +19,7 @@ module Legion
             raise ArgumentError, 'only terminal tasks may be purged' unless task_terminal_status?(status: status)
             raise ArgumentError, 'purge age must be positive' unless age_seconds.positive?
 
-            pending_statuses = task_execution_settings.fetch(:outbox).fetch(:statuses).values_at(:pending, :claimed)
+            pending_statuses = Legion::Data::TaskExecution::DISPATCH_STATUSES.values_at(:pending, :claimed)
             pending = Legion::Data.connection[:task_dispatches].where(status: pending_statuses).exclude(task_id: nil).select(:task_id)
             ids = Legion::Data::Model::Task.where(status: status).where { created <= now - age_seconds }
                                            .exclude(id: pending).order(:created, :id).limit(limit).select_map(:id)

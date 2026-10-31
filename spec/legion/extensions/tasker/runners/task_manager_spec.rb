@@ -27,13 +27,17 @@ RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
     expect(Legion::Data::TaskExecution.claim_task(task_id: task[:id], owner: 'replacement')[:claimed]).to be(false)
   end
 
-  it 'retains terminal tasks that still own an undelivered continuation' do
+  it 'retains undelivered continuations despite divergent local task and dispatch status settings' do
     aged = Time.now - 7200
     pending = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'task.completed' }, idempotency_key: 'pending')[:task]
     deleted = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'task.completed' }, idempotency_key: 'delivered')[:task]
     Legion::Data::TaskExecution.enqueue_dispatch(event_key: 'pending-check', message_type: 'check_subtask', options: {}, task_id: pending[:id])
 
-    expect(runner.purge_old(age_seconds: 3600)).to include(deleted: 1)
+    Legion::Settings.with_overlay(task_execution: { statuses: { completed: 'local.completed' }, terminal_statuses: [],
+                                                  outbox: { statuses: { pending: 'local.pending', claimed: 'local.claimed' } } },
+                                  data:           { task_execution: { outbox: { statuses: { pending: 'other.pending', claimed: 'other.claimed' } } } }) do
+      expect(runner.purge_old(age_seconds: 3600)).to include(deleted: 1)
+    end
     expect(Legion::Data::Model::Task[pending[:id]]).not_to be_nil
     expect(Legion::Data::Model::Task[deleted[:id]]).to be_nil
     expect { runner.purge_old(status: 'task.running') }.to raise_error(ArgumentError, /terminal/)

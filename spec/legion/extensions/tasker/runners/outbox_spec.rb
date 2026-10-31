@@ -40,7 +40,7 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Outbox do
     expect(TASKER_SPEC_DB[:task_dispatches].first[:delivered_at]).not_to be_nil
   end
 
-  it 'relays every producer message type through its real transport message class' do
+  it 'relays persisted message types despite divergent local identity settings' do
     fixture = seed_relationship
     received = Queue.new
     %w[example task].each do |exchange|
@@ -53,7 +53,11 @@ RSpec.describe Legion::Extensions::Tasker::Runners::Outbox do
       Legion::Data::TaskExecution.enqueue_dispatch(event_key: "map:#{type}", message_type: type, options: options)
     end
 
-    expect(runner.dispatch_pending).to include(delivered: 5, released: 0)
+    Legion::Settings.with_overlay(task_execution: { message_types: { dynamic: 'local.dynamic', transform: 'local.transform' },
+                                                    routes:        { transform: 'local.transform' },
+                                                    outbox:        { statuses: { pending: 'local.pending', claimed: 'local.claimed' } } }) do
+      expect(runner.dispatch_pending).to include(delivered: 5, released: 0)
+    end
     bodies = Timeout.timeout(5) { Array.new(5) { received.pop } }
     expect(bodies.map { |body| body.dig(:args, :source) }).to contain_exactly('check_subtask', 'subtask', 'task', 'dynamic', 'transform')
   end

@@ -52,7 +52,7 @@ RSpec.describe Legion::Extensions::Tasker::Runners::CheckSubtask do
 
   it 'rejects the entire fanout before inserting children when the configured bound is exceeded' do
     fixture = seed_relationship
-    Legion::Settings.with_overlay(task_execution: { execution: { max_fanout: 1 } }) do
+    Legion::Settings.with_overlay(extensions: { tasker: { execution: { max_fanout: 1 } } }) do
       expect { runner.check_subtasks(**completion_options(fixture: fixture, results: [{ x: 1 }, { x: 2 }])) }.to raise_error(ArgumentError, /fanout/)
     end
     expect(TASKER_SPEC_DB[:tasks].where(parent_id: fixture[:parent][:id]).count).to eq(0)
@@ -61,7 +61,7 @@ RSpec.describe Legion::Extensions::Tasker::Runners::CheckSubtask do
   it 'uses persisted depth so stale message metadata cannot bypass the chain bound' do
     fixture = seed_relationship
     Legion::Data::Model::Task[fixture[:parent][:id]].update(depth: 3)
-    Legion::Settings.with_overlay(task_execution: { execution: { max_depth: 3 } }) do
+    Legion::Settings.with_overlay(extensions: { tasker: { execution: { max_depth: 3 } } }) do
       expect { runner.check_subtasks(**completion_options(fixture: fixture, depth: 0)) }.to raise_error(ArgumentError, /depth/)
     end
   end

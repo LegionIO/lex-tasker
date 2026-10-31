@@ -30,12 +30,16 @@ RSpec.describe Legion::Extensions::Tasker::Data::DelayedDispatchMigration do
     task = legacy_delayed_task(fixture: fixture)
     fixture[:relationship].update(delay: 900, conditions: nil, transformation: '{"changed":true}', engine: 'liquid')
 
-    migrate
+    Legion::Settings.with_overlay(task_execution: { statuses: { delayed: 'local.delayed' }, routes: { conditioner: 'local.conditioner' },
+                                                  message_types: { subtask: 'local.subtask' }, protocol: { metadata_fields: [:untrusted] } }) do
+      migrate
+    end
     canonical = TASKER_SPEC_DB[:tasks].where(id: task[:id]).first
     descriptor = Legion::JSON.load(canonical[:payload])
     expect(descriptor).to include(event_key: "task:#{task[:id]}:legacy-dispatch", message_type: 'subtask')
     expect(descriptor[:options]).to include(task_id: task[:id], conditions: '{"all":[]}', transformation: '{}', engine: 'erb',
-                                            args: { value: 42 }, function_args: { original: 'input' }, principal_id: 'principal', tenant_id: 'tenant')
+                                            args: { value: 42 }, function_args: { original: 'input' }, principal_id: 'principal', tenant_id: 'tenant',
+                                            routing_key: 'task.subtask.conditioner')
     expect(canonical[:task_delay]).to eq(30)
     expect(canonical[:deadline_at]).not_to be_nil
     expect(Legion::Extensions::Tasker::Runners::FetchDelayed.fetch(now: task[:created] + 30)).to include(dispatched: 1)
@@ -60,7 +64,9 @@ RSpec.describe Legion::Extensions::Tasker::Data::DelayedDispatchMigration do
     fixture = seed_relationship
     original = legacy_delayed_task(fixture: fixture)
     migrate
-    migrate(target: 0)
+    Legion::Settings.with_overlay(task_execution: { statuses: { delayed: 'other.delayed' } }) do
+      migrate(target: 0)
+    end
     expect(TASKER_SPEC_DB[:tasks].where(id: original[:id]).first).to eq(original)
     expect(TASKER_SPEC_DB.table_exists?(:tasker_delayed_dispatch_backups)).to be(false)
   end

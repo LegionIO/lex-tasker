@@ -13,7 +13,7 @@ module Legion
         module TaskFinder
           include Legion::Logging::Helper
           include Legion::Settings::Helper
-          include Legion::Settings::TaskExecution::Helper
+          include Legion::Transport::TaskProtocol::Helper
           include Legion::JSON::Helper
 
           def find_trigger(runner_class:, function:, **)
@@ -71,7 +71,7 @@ module Legion
           end
 
           def tasker_stage(envelope:)
-            types = task_execution_settings.fetch(:message_types)
+            types = Legion::Transport::TaskProtocol::MESSAGE_TYPES
             if tasker_template_present?(template: envelope[:conditions])
               { status: task_status(name: :conditioner_queued), routing_key: task_route(name: :conditioner), message_type: types.fetch(:subtask) }
             elsif tasker_template_present?(template: envelope[:transformation], engine: envelope[:engine])

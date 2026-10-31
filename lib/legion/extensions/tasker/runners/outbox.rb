@@ -42,11 +42,11 @@ module Legion
               return
             end
 
-            type = task_execution_settings.fetch(:message_types).key(dispatch[:message_type])
+            type = Legion::Transport::TaskProtocol::MESSAGE_TYPES.key(dispatch[:message_type])
             klass = MESSAGE_TYPES.fetch(type)
             options = dispatch.fetch(:options)
             options = options.merge(routing_key: task_route(name: :transform)) if type == :transform
-            result = klass.new(**options).publish!(**task_execution_settings.fetch(:publication))
+            result = klass.new(**options).publish!
             raise IOError, 'publication was not accepted' unless result.is_a?(Hash) && result[:accepted] == true
 
             if task && task[:status] == task_status(name: :dispatching)

@@ -8,13 +8,13 @@ Task lifecycle coordination for [LegionIO](https://github.com/LegionIO/LegionIO)
 gem install lex-tasker
 ```
 
-Version 0.4.0 requires `legion-settings >= 1.5.0`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and guarded execution. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run the new Data migrations before starting Tasker; existing published migrations must not be edited. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require loading Core, so the gem preserves the standard optional-Core dependency boundary.
+Version 0.4.0 requires `legion-settings >= 1.4.3`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and guarded execution. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run Data migrations through 144 before starting Tasker; existing published migrations must not be edited. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require loading Core, so the gem preserves the standard optional-Core dependency boundary.
 
 `LEGION_MODE=lite` uses in-process transport; Tasker still requires a real database. Lite mode is useful for integration tests but does not make the in-process broker durable.
 
 ## Upgrading a delayed backlog
 
-Stop Tasker consumers, relay actors, and task producers before upgrading; take a coordinated database backup. Apply Data migrations through 143 first, then let the framework run Tasker's extension migrations before activating its actors. Data 142 provides the real `task_logs` table and registered model; manually provisioned conflicting tables require operator reconciliation rather than silent schema adoption.
+Stop Tasker consumers, relay actors, and task producers before upgrading; take a coordinated database backup. Apply Data migrations through 144 first, then let the framework run Tasker's extension migrations before activating its actors. Data 142 provides the real `task_logs` table and registered model; manually provisioned conflicting tables require operator reconciliation rather than silent schema adoption. Data 144 adds the durable execution-policy snapshot to tasks and archived tasks.
 
 Tasker migration 001 creates a rollback journal. Migration 002 transactionally converts legacy flat delayed-task payloads into canonical envelopes using only the stored child snapshot and task row—not today's relationship definitions. Existing task IDs, results/input, conditions, transformation/engine, lineage, policy, and the earliest recorded deadline are preserved. Historical relationship/task delays use their maximum, matching the previous due-time rule. The outbox key is deterministic (`task:<id>:legacy-dispatch`). No broker publication occurs during migration.
 
@@ -50,13 +50,13 @@ All public runner methods use keyword arguments and return a Hash. Internal help
 
 `FetchDelayedPush` periodically sends wakeups; `FetchDelayed` consumes them. `Outbox` independently polls durable intents. Stage actors bypass the generic business runner so orchestration cannot prematurely complete the eventual target task. Housekeeping functions are explicit operations; configure their invocation cadence through your deployment's scheduler.
 
-The relay maps configured message types explicitly: `check_subtask` → CheckSubtask, `subtask` → SubTask, `task` → Task, `dynamic` → Dynamic, and `transform` → SubTask on the configured transform route. Unknown message types fail visibly and remain recoverable rather than evaluating arbitrary class names.
+The relay maps canonical message types explicitly: `check_subtask` → CheckSubtask, `subtask` → SubTask, `task` → Task, `dynamic` → Dynamic, and `transform` → SubTask on the canonical transform route. Unknown message types fail visibly and remain recoverable rather than evaluating arbitrary class names.
 
 `recover_running` does not retry unknown external effects. Resolve an unknown outcome operationally before scheduling another execution. `purge_old` accepts only terminal statuses and retains tasks with pending/claimed continuation intents.
 
 ## Settings
 
-Tasker uses `Legion::Settings::Helper` for `extensions.tasker` and `Legion::Settings::TaskExecution::Helper` for shared policy. Runtime overlays are respected; no runner duplicates shared status or route literals.
+Tasker uses `Legion::Settings::Helper` for dynamic process-local policy under `extensions.tasker`. Task status/route recognition uses `Legion::Transport::TaskProtocol::Helper`; message types and metadata fields use the protocol's immutable constants. Settings are not distributed storage and cannot rename persisted or wire identities.
 
 | Extension setting | Default |
 |---|---:|
@@ -64,6 +64,9 @@ Tasker uses `Legion::Settings::Helper` for `extensions.tasker` and `Legion::Sett
 | `delayed_batch_size` (eligible work per poll) | `100` |
 | `default_delay_seconds` | `0` |
 | `empty_templates` | `["", "{}", "[]", "null"]` |
+| `execution.max_depth` | `100` |
+| `execution.max_fanout` | `1000` |
+| `outbox.poll_interval_seconds` | `1` |
 | `housekeeping.purge_age_seconds` | `2678400` (31 days) |
 | `housekeeping.purge_limit` | `100` |
 | `housekeeping.queued_age_seconds` | `3600` |
@@ -71,7 +74,9 @@ Tasker uses `Legion::Settings::Helper` for `extensions.tasker` and `Legion::Sett
 | `housekeeping.queued_statuses` | `queued`, `conditioner_queued`, `transformer_queued`, `dispatching` |
 | `housekeeping.prefetch` | `1` |
 
-The `transport` section of `default_settings` defines Tasker's wakeup/housekeeping/log routes, queue names, wakeup TTL, and expiration. Shared `task_execution` defaults own canonical statuses, task routes, message types, terminal detection, maximum depth (`100`), fanout (`1000`), outbox lease (`30` seconds), batch size (`100`), and poll interval (`1` second). Publication defaults require publisher confirmation and mandatory routing and disable the separate transport spool because the outbox is already the durable source of truth.
+The `transport` section of `default_settings` defines Tasker's wakeup/housekeeping/log routes, queue names, wakeup TTL, and expiration. Tasker's depth/fanout and polling settings bound local work; changing them never reclassifies persisted task or dispatch statuses. Data owns immutable dispatch status identities and local outbox lease/batch defaults under `data.task_execution.outbox` (`lease_seconds: 30`, `batch_size: 100`). Stored absolute leases, retry timestamps, idempotency expiry, and each task's persisted execution-policy snapshot remain authoritative across nodes with different settings.
+
+Transport owns strict publication policy under `transport.task_publication`. The relay uses `publish!` defaults, which require publisher confirmation and mandatory routing and disable the separate transport spool because the outbox is already the durable source of truth. Canonical task statuses, terminal recognition, routes, message types, protocol version, and metadata fields are code/schema/wire contracts, not runtime configuration.
 
 ## Standalone lookup client
 
