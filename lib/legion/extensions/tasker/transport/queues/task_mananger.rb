@@ -1,13 +1,17 @@
 # frozen_string_literal: true
 
+require 'legion/extensions/tasker'
+
 module Legion
   module Extensions
     module Tasker
       module Transport
         module Queues
           class TaskManager < Legion::Transport::Queue
+            include Legion::Settings::Helper
+
             def queue_name
-              'tasker.task_manager'
+              settings.fetch(:transport).fetch(:task_manager_queue)
             end
 
             def queue_options

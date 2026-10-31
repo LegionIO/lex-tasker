@@ -5,6 +5,8 @@ module Legion
     module Tasker
       module Actor
         class CheckSubtask < Legion::Extensions::Actors::Subscription
+          trusted_internal true
+
           def runner_function
             'check_subtasks'
           end

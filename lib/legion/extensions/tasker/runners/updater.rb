@@ -1,31 +1,24 @@
 # frozen_string_literal: true
 
+require 'legion/extensions/tasker/helpers/task_finder'
+
 module Legion
   module Extensions
     module Tasker
       module Runners
         module Updater
-          include Legion::Extensions::Helpers::Lex
+          extend self
 
-          def update_status(task_id:, **opts)
+          include Legion::Extensions::Tasker::Helpers::TaskFinder
+
+          def update_status(task_id:, status: nil, expected_status: nil, token: nil, **opts)
             task = Legion::Data::Model::Task[task_id]
-            return { success: false, changed: false, task_id: task_id, message: 'task nil' } if task.nil? || task.values.nil?
+            return { success: false, changed: false, task_id: task_id, reason: :missing } unless task
 
-            update_hash = {}
-            %i[status function_args payload results].each do |column|
-              next unless opts.key? column
-
-              update_hash[column] = if opts[column].is_a? String
-                                      opts[column]
-                                    else
-                                      to_json opts[column]
-                                    end
-            end
-            return { success: true, changed: false, task_id: task_id } if update_hash.none?
-
-            task.update(update_hash)
-
-            { success: true, changed: true, task_id: task_id, updates: update_hash }
+            values = opts.slice(:function_args, :payload, :results)
+            result = Legion::Data::TaskExecution.transition_task(task_id: task_id, status: status || task[:status],
+                                                                 expected_status: expected_status, token: token, values: values)
+            { success: result[:changed] || task_terminal_status?(status: result[:task][:status]), task_id: task_id, **result }
           end
         end
       end

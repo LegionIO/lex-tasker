@@ -1,64 +1,24 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-
 require 'legion/extensions/tasker/transport/queues/check_subtask'
-require 'legion/extensions/tasker/transport/queues/subtask'
-require 'legion/extensions/tasker/transport/queues/task_log'
-require 'legion/extensions/tasker/transport/queues/task_mananger'
-require 'legion/extensions/tasker/transport/queues/updater'
+require 'legion/extensions/tasker/transport/queues/fetch_delayed'
 
-RSpec.describe 'Tasker Transport Queues' do
-  describe Legion::Extensions::Tasker::Transport::Queues::CheckSubtask do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to task.subtask.check' do
-      expect(queue.queue_name).to eq('task.subtask.check')
-    end
-
-    it 'sets auto_delete to false' do
-      expect(queue.queue_options[:auto_delete]).to eq(false)
-    end
-
-    it 'includes arguments key in queue_options' do
-      expect(queue.queue_options).to have_key(:arguments)
+RSpec.describe 'Tasker queue policy' do
+  it 'keeps continuation consumers aligned with the configured publication route' do
+    Legion::Settings.with_overlay(task_execution: { routes: { check_subtask: 'custom.continue' } }) do
+      queue = Legion::Extensions::Tasker::Transport::Queues::CheckSubtask.allocate
+      message = Legion::Transport::Messages::CheckSubtask.new
+      expect(queue.queue_name).to eq(message.routing_key)
+      expect(queue.queue_name).to eq('custom.continue')
     end
   end
 
-  describe Legion::Extensions::Tasker::Transport::Queues::Subtask do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to task.subtask' do
-      expect(queue.queue_name).to eq('task.subtask')
-    end
-  end
-
-  describe Legion::Extensions::Tasker::Transport::Queues::Log do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to task.log' do
-      expect(queue.queue_name).to eq('task.log')
-    end
-  end
-
-  describe Legion::Extensions::Tasker::Transport::Queues::TaskManager do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to tasker.task_manager' do
-      expect(queue.queue_name).to eq('tasker.task_manager')
-    end
-
-    it 'enables x-single-active-consumer' do
-      sac = queue.queue_options.dig(:arguments, :'x-single-active-consumer')
-      expect(sac).to eq(true)
-    end
-  end
-
-  describe Legion::Extensions::Tasker::Transport::Queues::Updater do
-    subject(:queue) { described_class.allocate }
-
-    it 'sets queue name to task.updater' do
-      expect(queue.queue_name).to eq('task.updater')
+  it 'allows operators to tune delayed wakeup retention independently of task retention' do
+    Legion::Settings.with_overlay(extensions: { tasker: { transport: { fetch_delayed_queue: 'custom.delay', fetch_delayed_ttl_ms: 2000 } } }) do
+      queue = Legion::Extensions::Tasker::Transport::Queues::FetchDelayed.allocate
+      expect(queue.queue_name).to eq('custom.delay')
+      expect(queue.queue_options[:arguments]).to include('x-message-ttl': 2000)
     end
   end
 end

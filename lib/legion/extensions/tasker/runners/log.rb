@@ -1,16 +1,21 @@
 # frozen_string_literal: true
 
-require 'json'
+require 'legion/json/helper'
+require 'legion/data'
+require 'legion/logging/helper'
 
 module Legion
   module Extensions
     module Tasker
       module Runners
         module Log
-          include Legion::Extensions::Helpers::Lex
+          extend self
+
+          include Legion::JSON::Helper
+          include Legion::Logging::Helper
 
           def add_log(task_id:, entry:, function: nil, runner_class: nil, **opts)
-            entry = ::JSON.dump(entry) unless entry.is_a? String
+            entry = json_dump(entry) unless entry.is_a? String
             insert = { task_id: task_id, entry: entry }
             if opts.key?(:node_id)
               insert[:node_id] = opts[:node_id]
@@ -21,31 +26,34 @@ module Legion
             insert[:function_id] = opts[:function_id] if opts.key? :function_id
 
             unless function.nil? && runner_class.nil?
-              runner = Legion::Data::Model::Runner.where(namespace: runner_class).first
-              insert[:function_id] = runner.functions_dataset.where(name: function).first.values[:id] unless runner.nil?
+              runner = Legion::Data::Model::Runner.first(namespace: runner_class)
+              target = runner&.functions_dataset&.first(name: function)
+              raise ArgumentError, 'task log function does not exist' unless target
+
+              insert[:function_id] = target[:id]
             end
 
-            id = Legion::Data::Model::TaskLog.insert(insert)
+            id = Legion::Data::Model::TaskLog.create(insert).id
 
             { success: !id.nil?, id: id }
           end
 
-          def delete_log(id:, **_opts)
-            delete = Legion::Data::Model::TaskLog[id].delete
+          def delete_log(id:, **)
+            delete = Legion::Data::Model::TaskLog.where(id: id).delete
             { success: delete.positive?, count: delete, deleted_id: id }
           end
 
-          def delete_task_logs(task_id:, **_opts)
+          def delete_task_logs(task_id:, **)
             delete = Legion::Data::Model::TaskLog.where(task_id: task_id).delete
             { success: delete.positive?, count: delete, deleted_task_id: task_id }
           end
 
-          def delete_node_logs(node_id:, **_opts)
+          def delete_node_logs(node_id:, **)
             delete = Legion::Data::Model::TaskLog.where(node_id: node_id).delete
             { success: delete.positive?, count: delete, deleted_node_id: node_id }
           end
 
-          def delete_all(**_opts)
+          def delete_all(**)
             delete = Legion::Data::Model::TaskLog.dataset.delete
             { success: delete.positive?, count: delete }
           end

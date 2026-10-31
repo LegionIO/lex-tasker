@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0] - 2026-10-30
+
+### Added
+- Durable outbox relay with explicit message-type mapping, confirmed publication, lease recovery, and terminal cancellation/expiry discard.
+- Atomic, idempotent relationship children with bounded depth/fanout and inherited identity, input, schema, deadlines, and chain lineage.
+- Real Sequel model and in-process transport regression coverage for child creation, delayed replay, publication failure, and guarded lifecycle changes.
+- Versioned delayed-backlog conversion from stored historical snapshots, with deterministic dispatch keys, transactional diagnostics, and an exact-value rollback journal.
+
+### Changed
+- Immediate and delayed tasks share one stored dispatch envelope; delayed polling no longer reconstructs or loses the original input and policy.
+- Status updates, queue expiry, and abandoned execution recovery use guarded persistence transitions; old queued events cannot overwrite terminal results.
+- All task lifecycle policy and routing use shared task-execution settings and extension settings helpers.
+- Require legion-settings 1.5.0, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
+- Standalone client uses real database models and settings rather than an unused model injection or fake logging/settings implementations.
+
+### Fixed
+- Normalize joined Sequel rows at boundaries, meaningful short templates and explicit engines, delayed cancellation, and task-log deletion.
+- Create task logs through the real Data model so migration 142 UUID/timestamp defaults are honored; regression specs use the actual migrated schema.
+- Preserve pending outbox continuations during terminal-task purging and avoid treating unknown external effects as retryable execution.
+
 ## [0.3.10] - 2026-04-13
 
 ### Added

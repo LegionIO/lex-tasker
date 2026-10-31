@@ -5,6 +5,12 @@ module Legion
     module Tasker
       module Actor
         class Log < Legion::Extensions::Actors::Subscription
+          trusted_internal true
+
+          def use_runner?
+            false
+          end
+
           def check_subtask?
             false
           end

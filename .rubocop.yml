@@ -5,10 +5,14 @@ inherit_gem:
 Legion/Extension/EveryActorRequiresTime:
   Enabled: false
 
-# data_required? true but uses legion-data tables (no own migrations directory)
+# Reminder cop unconditionally flags true, even with the real data/migrations files.
 Legion/Extension/DataRequiredWithoutMigrations:
   Enabled: false
-
 # Private helpers and non-runner methods return non-Hash values by design
+
 Legion/Extension/RunnerReturnHash:
   Enabled: false
+
+# Runners expose both module calls and included helper methods to the framework.
+Style/ModuleFunction:
+  EnforcedStyle: extend_self
