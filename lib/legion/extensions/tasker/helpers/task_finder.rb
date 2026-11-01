@@ -12,7 +12,6 @@ module Legion
       module Helpers
         module TaskFinder
           include Legion::Logging::Helper
-          include Legion::Settings::Helper
           include Legion::Transport::TaskProtocol::Helper
           include Legion::JSON::Helper
 

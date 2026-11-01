@@ -62,9 +62,17 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
   config.include TaskerDatabaseExamples
   config.expect_with(:rspec) { |expectations| expectations.syntax = :expect }
+  config.before(:suite) do
+    # Standalone specs supply the settings mixin that LegionIO injects when building runners.
+    Legion::Extensions::Tasker::Runners.constants(false).each do |name|
+      Legion::Extensions::Tasker::Runners.const_get(name, false).include(Legion::Settings::Helper)
+    end
+  end
+  config.before do
+    Legion::Settings[:extensions][:tasker] = Legion::Extensions::Tasker.default_settings
+  end
   config.around do |example|
-    Legion::Settings.with_overlay(extensions: { tasker: Legion::Extensions::Tasker.default_settings },
-                                  data: { connected: true }, transport: { messages: { encrypt: false } }) do
+    Legion::Settings.with_overlay(data: { connected: true }, transport: { messages: { encrypt: false } }) do
       TASKER_SPEC_DB.transaction(rollback: :always, auto_savepoint: true) { example.run }
     end
   end

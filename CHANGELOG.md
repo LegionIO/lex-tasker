@@ -13,13 +13,15 @@
 - Status updates, queue expiry, and abandoned execution recovery use guarded persistence transitions; old queued events cannot overwrite terminal results.
 - Keep depth/fanout and outbox polling policy in Tasker-local settings; use immutable Transport task-protocol identities and Data dispatch statuses across nodes.
 - Use Transport-owned `publish!` defaults; Data migration 144 stores durable execution policy independently of local settings.
-- Require legion-settings 1.4.3, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
+- Require legion-settings 1.4.5, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
 - Standalone client uses real database models and settings rather than an unused model injection or fake logging/settings implementations.
+- Use framework-injected settings for runners and actors; standalone clients register boot defaults through Legion Settings and share the live Tasker settings namespace.
 
 ### Fixed
 - Normalize joined Sequel rows at boundaries, meaningful short templates and explicit engines, delayed cancellation, and task-log deletion.
 - Create task logs through the real Data model so migration 142 UUID/timestamp defaults are honored; regression specs use the actual migrated schema.
 - Preserve pending outbox continuations during terminal-task purging and avoid treating unknown external effects as retryable execution.
+- Give standalone delayed-migration helpers the standard live settings helper; isolate spec defaults in canonical settings so configured empty recovery lists remain authoritative.
 
 ## [0.3.10] - 2026-04-13
 

@@ -8,7 +8,7 @@ Task lifecycle coordination for [LegionIO](https://github.com/LegionIO/LegionIO)
 gem install lex-tasker
 ```
 
-Version 0.4.0 requires `legion-settings >= 1.4.3`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and guarded execution. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run Data migrations through 144 before starting Tasker; existing published migrations must not be edited. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require loading Core, so the gem preserves the standard optional-Core dependency boundary.
+Version 0.4.0 requires `legion-settings >= 1.4.5`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and guarded execution. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run Data migrations through 144 before starting Tasker; existing published migrations must not be edited. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require loading Core, so the gem preserves the standard optional-Core dependency boundary.
 
 `LEGION_MODE=lite` uses in-process transport; Tasker still requires a real database. Lite mode is useful for integration tests but does not make the in-process broker durable.
 
@@ -56,7 +56,7 @@ The relay maps canonical message types explicitly: `check_subtask` → CheckSubt
 
 ## Settings
 
-Tasker uses `Legion::Settings::Helper` for dynamic process-local policy under `extensions.tasker`. Task status/route recognition uses `Legion::Transport::TaskProtocol::Helper`; message types and metadata fields use the protocol's immutable constants. Settings are not distributed storage and cannot rename persisted or wire identities.
+Tasker reads dynamic process-local policy from `Legion::Settings[:extensions][:tasker]` through the settings helper injected by the framework into runners and actors. Defaults are registered at boot, not on each read. Task status/route recognition uses `Legion::Transport::TaskProtocol::Helper`; message types and metadata fields use the protocol's immutable constants. Settings are not distributed storage and cannot rename persisted or wire identities.
 
 | Extension setting | Default |
 |---|---:|
@@ -89,7 +89,7 @@ relationships = client.find_subtasks(trigger_id: trigger.fetch(:function_id)) if
 client.find_delayed.each { |task| puts task.fetch(:id) }
 ```
 
-The client uses configured, loaded Legion Data models. `find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a data model or silently hide a disconnected database. Tests use real Legion JSON/Logging/Settings, SQLite-backed models, the Data task-execution APIs, and in-process transport.
+The client uses configured, loaded Legion Data models and the standard settings helper with the Tasker namespace. Initialization registers defaults through Legion Settings; subsequent reads use the live settings tree. `find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a data model or silently hide a disconnected database. Tests use real Legion JSON/Logging/Settings, SQLite-backed models, the Data task-execution APIs, and in-process transport.
 
 ## Development
 

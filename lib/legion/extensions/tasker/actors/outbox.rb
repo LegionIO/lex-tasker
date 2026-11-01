@@ -7,8 +7,6 @@ module Legion
     module Tasker
       module Actor
         class Outbox < Legion::Extensions::Actors::Every
-          include Legion::Settings::Helper
-
           def runner_function
             'dispatch_pending'
           end

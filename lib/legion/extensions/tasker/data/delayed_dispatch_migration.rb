@@ -10,6 +10,7 @@ module Legion
         module DelayedDispatchMigration
           extend self
 
+          include Legion::Settings::Helper
           include Legion::Extensions::Tasker::Helpers::TaskFinder
 
           TASK_VALUES = %i[payload task_delay depth deadline_at].freeze

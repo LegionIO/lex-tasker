@@ -6,15 +6,14 @@ module Legion
   module Extensions
     module Tasker
       class Client
+        include Legion::Settings::Helper
         include Legion::Extensions::Tasker::Helpers::TaskFinder
 
         def initialize
-          Legion::Settings.merge_settings(:extensions, tasker: Legion::Extensions::Tasker.default_settings)
+          Legion::Settings.loader.load_module_default(extensions: { tasker: Legion::Extensions::Tasker.default_settings })
         end
 
-        private
-
-        def derive_settings_segments
+        def segments
           [:tasker]
         end
       end
