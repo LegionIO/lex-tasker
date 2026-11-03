@@ -5,6 +5,8 @@ module Legion
     module Tasker
       module Actor
         class Updater < Legion::Extensions::Actors::Subscription
+          trusted_internal true
+
           def runner_function
             'update_status'
           end

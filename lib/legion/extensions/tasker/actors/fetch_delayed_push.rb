@@ -26,7 +26,7 @@ module Legion
           end
 
           def time
-            1
+            settings.fetch(:delayed_poll_interval_seconds)
           end
         end
       end

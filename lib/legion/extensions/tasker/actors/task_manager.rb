@@ -5,8 +5,10 @@ module Legion
     module Tasker
       module Actor
         class TaskManager < Legion::Extensions::Actors::Subscription
+          trusted_internal true
+
           def use_runner?
-            true
+            false
           end
 
           def check_subtask?
@@ -18,7 +20,7 @@ module Legion
           end
 
           def prefetch
-            1
+            settings.fetch(:housekeeping).fetch(:prefetch)
           end
         end
       end

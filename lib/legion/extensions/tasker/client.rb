@@ -1,27 +1,20 @@
 # frozen_string_literal: true
 
-require_relative 'helpers/task_finder'
+require 'legion/extensions/tasker/helpers/task_finder'
 
 module Legion
   module Extensions
     module Tasker
       class Client
-        include Helpers::TaskFinder
+        include Legion::Settings::Helper
+        include Legion::Extensions::Tasker::Helpers::TaskFinder
 
-        def initialize(data_model: nil)
-          @data_model = data_model
+        def initialize
+          Legion::Settings.loader.load_module_default(extensions: { tasker: Legion::Extensions::Tasker.default_settings })
         end
 
-        def models_class
-          @data_model || Legion::Data::Model
-        end
-
-        def log
-          @log ||= defined?(Legion::Logging) ? Legion::Logging : Logger.new($stdout) # rubocop:disable Legion/HelperMigration/LoggingGuard
-        end
-
-        def settings
-          { options: {} }
+        def segments
+          [:tasker]
         end
       end
     end
