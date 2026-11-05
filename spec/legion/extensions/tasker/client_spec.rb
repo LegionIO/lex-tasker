@@ -5,19 +5,15 @@ require 'legion/extensions/tasker/client'
 require 'legion/extensions/tasker/runners/task_manager'
 
 RSpec.describe Legion::Extensions::Tasker::Client do
-  it 'finds persisted delayed work despite obsolete local status overrides' do
+  it 'returns delayed task rows as plain hashes' do
     fixture = seed_relationship
-    task = Legion::Data::TaskExecution.create_task(values:          { function_id: fixture[:action].id, status: 'task.delayed' },
-                                                   idempotency_key: 'canonical-delayed')[:task]
-    Legion::Settings.with_overlay(task_execution: { statuses: { delayed: 'custom.delayed' } }) do
-      expect(described_class.new.find_delayed.map { |row| row[:id] }.to_a).to eq([task[:id]])
-    end
+    task = Legion::Data::Model::Task.create(function_id: fixture[:action].id, status: 'task.delayed')
+    expect(described_class.new.find_delayed.to_a).to eq([task.values])
   end
 
   it 'preserves disabled queued recovery during client initialization and observes later policy changes' do
     now = Time.now
-    task = Legion::Data::TaskExecution.create_task(values:          { created: now - 7200, status: 'task.queued' },
-                                                   idempotency_key: 'disabled-recovery')[:task]
+    task = Legion::Data::Model::Task.create(created: now - 7200, status: 'task.queued').values
     Legion::Settings[:extensions][:tasker][:housekeeping][:queued_statuses] = []
     described_class.new
     manager = Legion::Extensions::Tasker::Runners::TaskManager

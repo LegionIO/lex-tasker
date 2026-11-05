@@ -3,25 +3,23 @@
 ## [0.4.0] - 2026-10-30
 
 ### Added
-- Durable outbox relay with explicit message-type mapping, confirmed publication, lease recovery, and terminal cancellation/expiry discard.
-- Atomic, idempotent relationship children with bounded depth/fanout and inherited identity, input, schema, deadlines, and chain lineage.
-- Real Sequel model and in-process transport regression coverage for child creation, delayed replay, publication failure, and guarded lifecycle changes.
-- Versioned delayed-backlog conversion from stored historical snapshots, with deterministic dispatch keys, transactional diagnostics, and an exact-value rollback journal.
+- Relationship children with bounded depth/fanout and inherited identity, input, schema, and chain lineage.
+- Real Sequel model and in-process transport regression coverage for persistence failures, child publication, and delayed replay.
 
 ### Changed
 - Immediate and delayed tasks share one stored dispatch envelope; delayed polling no longer reconstructs or loses the original input and policy.
-- Status updates, queue expiry, and abandoned execution recovery use guarded persistence transitions; old queued events cannot overwrite terminal results.
-- Keep depth/fanout and outbox polling policy in Tasker-local settings; use immutable Transport task-protocol identities and Data dispatch statuses across nodes.
-- Use Transport-owned `publish!` defaults; Data migration 144 stores durable execution policy independently of local settings.
+- Persist each task message with an ordinary Task model create or update; remove execution claims, attempts, leases, outbox coordination, unmerged deadline persistence/expiry policy, and branch-only delayed-conversion migrations.
+- Publish immediate children directly; delayed fetching reads stored envelopes, publishes, and updates the task's queued status.
+- Use `Legion::Transport::Task::Protocol` and Transport-owned `publish!` defaults with prefetch 1 consumers.
 - Require legion-settings 1.4.5, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
 - Standalone client uses real database models and settings rather than an unused model injection or fake logging/settings implementations.
 - Use framework-injected settings for runners and actors; standalone clients register boot defaults through Legion Settings and share the live Tasker settings namespace.
 
 ### Fixed
-- Normalize joined Sequel rows at boundaries, meaningful short templates and explicit engines, delayed cancellation, and task-log deletion.
-- Create task logs through the real Data model so migration 142 UUID/timestamp defaults are honored; regression specs use the actual migrated schema.
-- Preserve pending outbox continuations during terminal-task purging and avoid treating unknown external effects as retryable execution.
-- Give standalone delayed-migration helpers the standard live settings helper; isolate spec defaults in canonical settings so configured empty recovery lists remain authoritative.
+- Normalize joined Sequel rows at boundaries, meaningful short templates and explicit engines, delayed cancellation, and task-log deletion. A cancelled parent cannot affect the following parentless delayed task.
+- Create task logs through the real Data model so schema UUID/timestamp defaults are honored.
+- Propagate database write errors and publication failures; retain delayed status when publication fails.
+- Preserve explicit empty housekeeping status lists and resolve local companion dependencies from the existing monorepo checkouts.
 
 ## [0.3.10] - 2026-04-13
 

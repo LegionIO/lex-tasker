@@ -9,7 +9,7 @@ module Legion
     module Tasker
       module Runners
         module Log
-          extend self
+          extend self # -- Runner module methods need the included helpers.
 
           include Legion::JSON::Helper
           include Legion::Logging::Helper

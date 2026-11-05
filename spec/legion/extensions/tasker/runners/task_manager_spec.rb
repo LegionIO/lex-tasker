@@ -6,40 +6,46 @@ require 'legion/extensions/tasker/runners/task_manager'
 RSpec.describe Legion::Extensions::Tasker::Runners::TaskManager do
   subject(:runner) { described_class }
 
-  it 'expires only aged unowned queue work and leaves a completed result intact' do
+  it 'creates one task with serialized arguments and payload' do
+    result = nil
+    expect do
+      result = runner.generate_task_id(function_id: nil, args: { value: 42 }, payload: { source: 'message' })
+    end.to change(Legion::Data::Model::Task, :count).by(1)
+    task = Legion::Data::Model::Task[result[:task_id]]
+    expect(result).to include(success: true, task_id: task.id)
+    expect(Legion::JSON.load(task[:function_args])).to eq(value: 42)
+    expect(Legion::JSON.load(task[:payload])).to eq(source: 'message')
+  end
+
+  it 'propagates database insert failures to the persistence consumer' do
+    TASKER_SPEC_DB.run("CREATE TRIGGER reject_task_insert BEFORE INSERT ON tasks BEGIN SELECT RAISE(FAIL, 'task write rejected'); END")
+    expect { runner.generate_task_id(function_id: nil) }.to raise_error(Sequel::DatabaseError, /task write rejected/)
+  ensure
+    TASKER_SPEC_DB.run('DROP TRIGGER IF EXISTS reject_task_insert')
+  end
+
+  it 'expires only aged queued work and leaves completed and fresh tasks intact' do
     aged = Time.now - 7200
-    queued = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'transformer.queued' }, idempotency_key: 'queued')[:task]
-    complete = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'task.completed' }, idempotency_key: 'done')[:task]
-    fresh = Legion::Data::TaskExecution.create_task(values: {}, idempotency_key: 'fresh')[:task]
+    queued = Legion::Data::Model::Task.create(created: aged, status: 'transformer.queued')
+    complete = Legion::Data::Model::Task.create(created: aged, status: 'task.completed')
+    fresh = Legion::Data::Model::Task.create(status: 'task.queued')
 
     expect(runner.expire_queued).to include(expired: 1)
-    expect(Legion::Data::Model::Task[queued[:id]][:status]).to eq('task.expired')
-    expect(Legion::Data::Model::Task[complete[:id]][:status]).to eq('task.completed')
-    expect(Legion::Data::Model::Task[fresh[:id]][:status]).to eq('task.queued')
+    expect(queued.refresh[:status]).to eq('task.expired')
+    expect(complete.refresh[:status]).to eq('task.completed')
+    expect(fresh.refresh[:status]).to eq('task.queued')
   end
 
-  it 'marks abandoned running effects unknown without claiming another attempt' do
-    task = Legion::Data::TaskExecution.create_task(values: {}, idempotency_key: 'abandoned')[:task]
-    Legion::Data::TaskExecution.claim_task(task_id: task[:id], owner: 'lost', now: Time.now - 120)
-    expect(runner.recover_running).to include(unknown: 1)
-    expect(Legion::Data::Model::Task[task[:id]][:status]).to eq('task.unknown')
-    expect(TASKER_SPEC_DB[:task_attempts].where(task_id: task[:id]).count).to eq(1)
-    expect(Legion::Data::TaskExecution.claim_task(task_id: task[:id], owner: 'replacement')[:claimed]).to be(false)
-  end
-
-  it 'retains undelivered continuations despite divergent local task and dispatch status settings' do
+  it 'purges aged terminal tasks without removing active or recent work' do
     aged = Time.now - 7200
-    pending = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'task.completed' }, idempotency_key: 'pending')[:task]
-    deleted = Legion::Data::TaskExecution.create_task(values: { created: aged, status: 'task.completed' }, idempotency_key: 'delivered')[:task]
-    Legion::Data::TaskExecution.enqueue_dispatch(event_key: 'pending-check', message_type: 'check_subtask', options: {}, task_id: pending[:id])
+    deleted = Legion::Data::Model::Task.create(created: aged, status: 'task.completed')
+    active = Legion::Data::Model::Task.create(created: aged, status: 'task.running')
+    recent = Legion::Data::Model::Task.create(status: 'task.completed')
 
-    Legion::Settings.with_overlay(task_execution: { statuses: { completed: 'local.completed' }, terminal_statuses: [],
-                                                  outbox: { statuses: { pending: 'local.pending', claimed: 'local.claimed' } } },
-                                  data:           { task_execution: { outbox: { statuses: { pending: 'other.pending', claimed: 'other.claimed' } } } }) do
-      expect(runner.purge_old(age_seconds: 3600)).to include(deleted: 1)
-    end
-    expect(Legion::Data::Model::Task[pending[:id]]).not_to be_nil
-    expect(Legion::Data::Model::Task[deleted[:id]]).to be_nil
+    expect(runner.purge_old(age_seconds: 3600)).to include(deleted: 1)
+    expect(Legion::Data::Model::Task[deleted.id]).to be_nil
+    expect(Legion::Data::Model::Task[active.id]).not_to be_nil
+    expect(Legion::Data::Model::Task[recent.id]).not_to be_nil
     expect { runner.purge_old(status: 'task.running') }.to raise_error(ArgumentError, /terminal/)
   end
 end

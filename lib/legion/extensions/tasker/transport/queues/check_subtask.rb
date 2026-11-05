@@ -8,7 +8,7 @@ module Legion
       module Transport
         module Queues
           class CheckSubtask < Legion::Transport::Queue
-            include Legion::Transport::TaskProtocol::Helper
+            include Legion::Transport::Task::Protocol::Helper
 
             def queue_name
               task_route(name: :check_subtask)

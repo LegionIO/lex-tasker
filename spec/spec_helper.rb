@@ -7,12 +7,12 @@ Legion::Logging.setup(level: 'fatal', log_file: File::NULL, log_stdout: false, a
 require 'legion/settings'
 Legion::Settings.loader = Legion::Settings::Loader.new
 require 'legion/data'
-require 'legion/data/task_execution'
 require 'legion/transport'
 require 'legion/transport/connection'
 Legion::Transport::Connection.setup
 require 'legion/extensions/tasker'
 require 'sequel'
+require 'timeout'
 Sequel.extension :migration
 
 TASKER_SPEC_DB = Sequel.sqlite
@@ -44,8 +44,7 @@ module TaskerDatabaseExamples
     trigger = Legion::Data::Model::Function.create(runner_id: source.id, name: 'produce')
     action = Legion::Data::Model::Function.create(runner_id: target.id, name: 'consume')
     relationship = Legion::Data::Model::Relationship.create({ trigger_id: trigger.id, action_id: action.id, allow_new_chains: true }.merge(attributes))
-    parent = Legion::Data::TaskExecution.create_task(values:          { function_id: trigger.id, status: 'task.completed' },
-                                                     idempotency_key: 'parent')[:task]
+    parent = Legion::Data::Model::Task.create(function_id: trigger.id, status: 'task.completed').values
     { relationship: relationship, parent: parent, trigger: trigger, action: action }
   end
 
@@ -54,6 +53,17 @@ module TaskerDatabaseExamples
       args: { original: 'input' }, results: { value: 42 }, principal_id: 'principal', principal_type: 'service',
       tenant_id: 'tenant', correlation_id: 'correlation', chain_id: 9, schema: { value: 'integer' },
       engine_options: { strict: true } }.merge(overrides)
+  end
+
+  def bind_task_receiver(exchange:, tenant_id: 'tenant')
+    declaration = Legion::Transport::Exchange.declaration(name: exchange, tenant_id: tenant_id)
+    channel = Legion::Transport::Connection.channel
+    queue = channel.queue_declare_without_recording_topology("tasker-spec-#{SecureRandom.uuid}")
+    queue.bind(declaration[:name], routing_key: '#')
+    (@tasker_queues ||= []) << queue
+    received = Queue.new
+    queue.subscribe(manual_ack: false) { |_delivery, _properties, body| received << Legion::JSON.load(body) }
+    received
   end
 end
 
@@ -76,5 +86,6 @@ RSpec.configure do |config|
       TASKER_SPEC_DB.transaction(rollback: :always, auto_savepoint: true) { example.run }
     end
   end
+  config.after { @tasker_queues&.each(&:delete) }
   config.after(:suite) { Legion::Transport::Connection.shutdown }
 end

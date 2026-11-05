@@ -8,9 +8,11 @@ module Legion
     module Tasker
       module Runners
         module FetchDelayed
-          extend self
+          extend self # -- Runner module methods need the included helpers.
 
           include Legion::Extensions::Tasker::Helpers::TaskFinder
+
+          DISPATCH_STATUSES = { 'dynamic' => :queued, 'subtask' => :conditioner_queued, 'transform' => :transformer_queued }.freeze
 
           def fetch(now: Time.now, **)
             counts = { success: true, dispatched: 0, cancelled: 0, expired: 0 }
@@ -18,23 +20,21 @@ module Legion
             find_delayed.each do |task|
               break if counts.values_at(:dispatched, :cancelled, :expired).sum >= limit
 
-              parent = Legion::Data::Model::Task[task[:parent_id]] if task[:parent_id]
-              blocked = tasker_blocked_status(task: task, now: now)
-              blocked ||= tasker_blocked_status(task: parent.values, now: now) if parent
+              parent = task[:parent_id] ? Legion::Data::Model::Task[task[:parent_id]] : nil
+              blocked = tasker_blocked_status(task: task)
+              blocked ||= tasker_blocked_status(task: parent.values) if parent
               if blocked
-                transition = Legion::Data::TaskExecution.transition_task(task_id: task[:id], status: blocked,
-                                                                         expected_status: task_status(name: :delayed))
-                if transition[:changed] || transition[:task][:status] == blocked
-                  counts[blocked == task_status(name: :cancelled) ? :cancelled : :expired] += 1
-                end
+                Legion::Data::Model::Task[task[:id]].update(status: blocked)
+                counts[blocked == task_status(name: :cancelled) ? :cancelled : :expired] += 1
                 next
               end
               next if task[:created] + tasker_delay_seconds(delay: task[:task_delay]) > now
 
               dispatch = tasker_dispatch_from_task(task: task)
-              outcome = Legion::Data::TaskExecution.enqueue_task_dispatch(task_id:         task[:id], **dispatch,
-                                                                          expected_status: task_status(name: :delayed))
-              counts[:dispatched] += 1 if outcome[:created]
+              tasker_publish(**dispatch)
+              status = DISPATCH_STATUSES.fetch(dispatch[:message_type])
+              Legion::Data::Model::Task[task[:id]].update(status: task_status(name: status))
+              counts[:dispatched] += 1
             end
             counts
           end

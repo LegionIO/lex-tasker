@@ -1,19 +1,9 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require 'legion/extensions/tasker/transport/queues/check_subtask'
 require 'legion/extensions/tasker/transport/queues/fetch_delayed'
 
 RSpec.describe 'Tasker queue policy' do
-  it 'keeps continuation consumers on the canonical route despite obsolete local overrides' do
-    Legion::Settings.with_overlay(task_execution: { routes: { check_subtask: 'custom.continue' } }) do
-      queue = Legion::Extensions::Tasker::Transport::Queues::CheckSubtask.allocate
-      message = Legion::Transport::Messages::CheckSubtask.new
-      expect(queue.queue_name).to eq(message.routing_key)
-      expect(queue.queue_name).to eq('task.subtask.check')
-    end
-  end
-
   it 'allows operators to tune delayed wakeup retention independently of task retention' do
     Legion::Settings.with_overlay(extensions: { tasker: { transport: { fetch_delayed_queue: 'custom.delay', fetch_delayed_ttl_ms: 2000 } } }) do
       queue = Legion::Extensions::Tasker::Transport::Queues::FetchDelayed.allocate

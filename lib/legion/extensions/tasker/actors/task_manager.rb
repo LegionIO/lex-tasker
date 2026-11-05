@@ -18,10 +18,6 @@ module Legion
           def generate_task?
             false
           end
-
-          def prefetch
-            settings.fetch(:housekeeping).fetch(:prefetch)
-          end
         end
       end
     end

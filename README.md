@@ -1,6 +1,6 @@
 # lex-tasker
 
-Task lifecycle coordination for [LegionIO](https://github.com/LegionIO/LegionIO): relationship-linked children, delayed dispatch, durable publication, guarded status updates, and task housekeeping. Tasker requires a connected `legion-data` database and transport. It does not execute business functions itself.
+Task persistence and routing for [LegionIO](https://github.com/LegionIO/LegionIO): relationship-linked children, delayed publication, status updates, and task housekeeping. Tasker requires a connected `legion-data` database and transport. It does not execute business functions itself.
 
 ## Installation
 
@@ -8,32 +8,27 @@ Task lifecycle coordination for [LegionIO](https://github.com/LegionIO/LegionIO)
 gem install lex-tasker
 ```
 
-Version 0.4.0 requires `legion-settings >= 1.4.5`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and guarded execution. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run Data migrations through 144 before starting Tasker; existing published migrations must not be edited. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require loading Core, so the gem preserves the standard optional-Core dependency boundary.
+Version 0.4.0 requires `legion-settings >= 1.4.5`, `legion-data >= 1.11.0`, and `legion-transport >= 1.4.32`. Actor mode requires **LegionIO >= 1.9.53** for trusted internal admission and persistence-error propagation. Release/deploy Settings first, then Data/Transport, then Core, then Tasker and its pipeline peers. Run Data migrations before starting Tasker. The framework discovers the extension's runners, queues, and actors automatically. The standalone lookup client does not require Core.
 
 `LEGION_MODE=lite` uses in-process transport; Tasker still requires a real database. Lite mode is useful for integration tests but does not make the in-process broker durable.
 
 ## Upgrading a delayed backlog
 
-Stop Tasker consumers, relay actors, and task producers before upgrading; take a coordinated database backup. Apply Data migrations through 144 first, then let the framework run Tasker's extension migrations before activating its actors. Data 142 provides the real `task_logs` table and registered model; manually provisioned conflicting tables require operator reconciliation rather than silent schema adoption. Data 144 adds the durable execution-policy snapshot to tasks and archived tasks.
+Drain delayed tasks created by earlier Tasker versions before upgrading, then stop consumers and producers and back up the database. The new runtime stores one canonical publication envelope on each delayed task; it does not reconstruct old payloads from changed relationship definitions. There are no Tasker-specific coordination migrations, rollback journals, or additional dispatch tables.
 
-Tasker migration 001 creates a rollback journal. Migration 002 transactionally converts legacy flat delayed-task payloads into canonical envelopes using only the stored child snapshot and task row—not today's relationship definitions. Existing task IDs, results/input, conditions, transformation/engine, lineage, policy, and the earliest recorded deadline are preserved. Historical relationship/task delays use their maximum, matching the previous due-time rule. The outbox key is deterministic (`task:<id>:legacy-dispatch`). No broker publication occurs during migration.
+## Persistence and publication
 
-If a historical snapshot lacks required target/input/template information or contains invalid data, migration 002 reports the affected task IDs and rolls back **all** conversions and journal entries. Migration 001 remains installed, so the failed conversion can be retried without schema guards. Recover the missing fields from trusted historical records or drain those tasks using the previous Tasker release, then retry. Do not substitute changed relationship definitions or delete the failed tasks to make startup appear successful. New runtime code accepts only canonical envelopes; it does not maintain a dual-format fallback.
+Each persistence delivery creates or updates one ordinary `Legion::Data::Model::Task` row. Consumers use prefetch 1. Database errors propagate to the consumer rather than returning a successful persistence result. There are no execution claims, attempts, leases, or outbox actors.
 
-Before any converted task is changed or dispatched, rolling Tasker's extension schema back restores the exact original task fields from the journal. Rollback refuses missing/modified tasks or any task with an outbox intent, leaves the data and journal intact, and identifies the blocking task. After work has advanced, use an operationally coordinated database restore rather than rolling schema versions backward. Keep the migration journal with the database backup until the release is accepted.
+1. A completion message invokes `check_subtasks`. Tasker reads active relationships using real Sequel models and returns plain Hashes across helper boundaries.
+2. Each matching relationship and result creates one child with inherited identity, input, schema, and parent/master/chain lineage.
+3. Conditions run before transformations; otherwise the child goes directly to its function. An explicit engine honors short static templates such as `{}`. Blank templates are not stages. ERB trust policy belongs to Transformer.
+4. Immediate children publish directly with `publish!`. Delayed children store `status: 'task.delayed'`, `task_delay` in rounded-up seconds, and JSON `payload: { message_type:, options: }`. Options contain the complete target envelope, including arguments, templates, routing, and lineage.
+5. `fetch(now:)` reads delayed rows, checks task and parent cancellation, and publishes due envelopes with the persisted task ID. Only after publication succeeds does it update the row to the appropriate queued status. Relationship edits do not change stored envelopes.
 
-## Execution and durability
+Delays must be finite and nonnegative. Cancelled or already expired tasks are not published. Depth/fanout limits are checked before creating children. The delayed poll limit counts eligible rows, so an older long-delay task cannot starve later due work.
 
-1. A completed task emits a durable `check_subtask` continuation. Tasker queries active relationships using real Sequel models and converts every row crossing a helper boundary to a plain Hash.
-2. Each child has a deterministic identity derived from its parent task, relationship, and result-array index. The child and immediate outbox intent are committed atomically. Redelivering completion cannot create the same logical child twice, even after it finishes.
-3. One canonical envelope carries `args`, `results`, original `function_args`, target function, conditions, transformation, engine/schema/options, parent/master/chain lineage, identity, tenant, correlation, depth, and deadline. Business arguments remain separate from control metadata.
-4. Conditions run before transformations, otherwise the child goes directly to its function. Nonempty templates are meaningful; an explicitly selected engine also honors short static templates such as `{}`. Blank templates are not stages. ERB trust policy belongs to Transformer, not Tasker.
-5. Positive delays store that exact envelope on the task. Polling later atomically changes a due task to `dispatching` and records its outbox intent. Editing a relationship after child creation does not rewrite the child's payload or route. Delays are finite, nonnegative seconds, rounded up to whole seconds for storage; missing delay uses the configured default.
-6. The relay claims outbox leases, publishes with `publish!`, and acknowledges only an accepted publication. Failure releases the lease for recovery. A crash after broker acceptance but before acknowledgement can republish; downstream logical task claims and deterministic children make that redelivery safe. This is durable at-least-once handoff, not a claim of exactly-once arbitrary external effects.
-
-Cancellation and the earliest inherited deadline are checked before child creation, delayed enqueue, and publication. A cancelled/expired pending intent is marked **discarded**, never delivered, and is not reclaimed repeatedly. Core checks eligibility again before executing a target. Depth and fanout limits reject oversized continuation batches before creating their children.
-
-Delayed polling streams model rows, checks eligibility, then applies the configured eligible-batch limit. Long-delay rows at the front cannot starve later due rows. A large backlog with few due rows can require a full scan; rows are not eagerly materialized and broker publication is performed separately by the outbox relay.
+Database writes and broker publication are separate operations, not a distributed transaction. A failed immediate publication can leave its created row behind. A failed delayed publication leaves the row delayed; a crash after broker acceptance but before its status update can publish it again. Redelivered completion can create additional children. There is no exactly-once or automatic external-effect recovery guarantee.
 
 ## Runner and actor reference
 
@@ -41,22 +36,20 @@ All public runner methods use keyword arguments and return a Hash. Internal help
 
 | Runner | Methods | Operation |
 |---|---|---|
-| `CheckSubtask` | `check_subtasks(runner_class:, function:, task_id:, **context)` | Create/reuse relationship children and dispatch intents; returns counts and task IDs |
-| `FetchDelayed` | `fetch(now: Time.now)`, `push` | Record due dispatches or publish a confirmed poll wakeup |
-| `Outbox` | `dispatch_pending(owner: ..., limit: nil)` | Return `success`, `delivered`, `released`, and `discarded` counts |
-| `Updater` | `update_status(task_id:, status: nil, expected_status: nil, token: nil, **values)` | Guard status and JSON field updates; terminal outcomes cannot regress |
-| `TaskManager` | `expire_queued(age_seconds: nil, limit: nil)`, `recover_running(limit: nil)`, `purge_old(age_seconds: nil, limit: nil, status: nil)` | Expire stale queue work, mark abandoned execution `unknown`, or purge terminal tasks without pending continuations |
+| `CheckSubtask` | `check_subtasks(runner_class:, function:, task_id:, **context)` | Create and publish relationship children; return counts and task IDs |
+| `FetchDelayed` | `fetch(now: Time.now)`, `push` | Publish due tasks or a poll wakeup; return dispatched/cancelled/expired counts |
+| `Updater` | `update_status(task_id:, **values)` | Update one row's status, JSON fields, or cancellation; return success/changed/task_id and updated values |
+| `TaskManager` | `generate_task_id(function_id:, status: 'task.queued', **values)` | Create one task; return its values, success, and task_id |
+| `TaskManager` | `expire_queued(age_seconds: nil, limit: nil)`, `purge_old(age_seconds: nil, limit: nil, status: nil)` | Expire stale queued work or purge aged terminal tasks |
 | `Log` | `add_log`, `delete_log`, `delete_task_logs`, `delete_node_logs`, `delete_all` | Task log persistence and deletion |
 
-`FetchDelayedPush` periodically sends wakeups; `FetchDelayed` consumes them. `Outbox` independently polls durable intents. Stage actors bypass the generic business runner so orchestration cannot prematurely complete the eventual target task. Housekeeping functions are explicit operations; configure their invocation cadence through your deployment's scheduler.
+`FetchDelayedPush` periodically sends wakeups; `FetchDelayed` consumes them. Internal actors bypass the generic business runner so persistence and orchestration cannot prematurely complete the eventual target task. Configure housekeeping cadence through your deployment's scheduler.
 
-The relay maps canonical message types explicitly: `check_subtask` → CheckSubtask, `subtask` → SubTask, `task` → Task, `dynamic` → Dynamic, and `transform` → SubTask on the canonical transform route. Unknown message types fail visibly and remain recoverable rather than evaluating arbitrary class names.
-
-`recover_running` does not retry unknown external effects. Resolve an unknown outcome operationally before scheduling another execution. `purge_old` accepts only terminal statuses and retains tasks with pending/claimed continuation intents.
+`generate_task_id` accepts `args` and `payload` and serializes them into `function_args` and `payload`. `update_status` accepts `status`, `function_args`, `payload`, `results`, and `cancelled_at`. JSON fields may be Ruby values or already serialized strings. An update of a missing task returns `success: false`; an update with no supported fields returns `changed: false`. Status updates are ordinary writes, not guarded execution transitions.
 
 ## Settings
 
-Tasker reads dynamic process-local policy from `Legion::Settings[:extensions][:tasker]` through the settings helper injected by the framework into runners and actors. Defaults are registered at boot, not on each read. Task status/route recognition uses `Legion::Transport::TaskProtocol::Helper`; message types and metadata fields use the protocol's immutable constants. Settings are not distributed storage and cannot rename persisted or wire identities.
+Tasker reads dynamic process-local policy from `Legion::Settings[:extensions][:tasker]` through the settings helper injected by the framework. Defaults are registered at boot, not on each read. Statuses, routes, message types, and metadata use `Legion::Transport::Task::Protocol`; settings cannot rename persisted or wire identities.
 
 | Extension setting | Default |
 |---|---:|
@@ -66,17 +59,13 @@ Tasker reads dynamic process-local policy from `Legion::Settings[:extensions][:t
 | `empty_templates` | `["", "{}", "[]", "null"]` |
 | `execution.max_depth` | `100` |
 | `execution.max_fanout` | `1000` |
-| `outbox.poll_interval_seconds` | `1` |
 | `housekeeping.purge_age_seconds` | `2678400` (31 days) |
 | `housekeeping.purge_limit` | `100` |
 | `housekeeping.queued_age_seconds` | `3600` |
 | `housekeeping.recovery_limit` | `100` |
-| `housekeeping.queued_statuses` | `queued`, `conditioner_queued`, `transformer_queued`, `dispatching` |
-| `housekeeping.prefetch` | `1` |
+| `housekeeping.queued_statuses` | `queued`, `conditioner_queued`, `transformer_queued` |
 
-The `transport` section of `default_settings` defines Tasker's wakeup/housekeeping/log routes, queue names, wakeup TTL, and expiration. Tasker's depth/fanout and polling settings bound local work; changing them never reclassifies persisted task or dispatch statuses. Data owns immutable dispatch status identities and local outbox lease/batch defaults under `data.task_execution.outbox` (`lease_seconds: 30`, `batch_size: 100`). Stored absolute leases, retry timestamps, idempotency expiry, and each task's persisted execution-policy snapshot remain authoritative across nodes with different settings.
-
-Transport owns strict publication policy under `transport.task_publication`. The relay uses `publish!` defaults, which require publisher confirmation and mandatory routing and disable the separate transport spool because the outbox is already the durable source of truth. Canonical task statuses, terminal recognition, routes, message types, protocol version, and metadata fields are code/schema/wire contracts, not runtime configuration.
+The `transport` section of `default_settings` defines Tasker's wakeup/housekeeping/log routes, queue names, wakeup TTL, and expiration. Transport owns publication policy under `transport.task_publication`; Tasker uses `publish!` without overriding those settings.
 
 ## Standalone lookup client
 
@@ -89,11 +78,11 @@ relationships = client.find_subtasks(trigger_id: trigger.fetch(:function_id)) if
 client.find_delayed.each { |task| puts task.fetch(:id) }
 ```
 
-The client uses configured, loaded Legion Data models and the standard settings helper with the Tasker namespace. Initialization registers defaults through Legion Settings; subsequent reads use the live settings tree. `find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a data model or silently hide a disconnected database. Tests use real Legion JSON/Logging/Settings, SQLite-backed models, the Data task-execution APIs, and in-process transport.
+The client uses configured, loaded Legion Data models and the standard settings helper with the Tasker namespace. Initialization registers defaults; subsequent reads use the live settings tree. `find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a model or hide a disconnected database. Specs use SQLite-backed models and in-process transport.
 
 ## Development
 
-The Gemfile can use local companion checkouts from `.ci-dependencies/<repo>` (coordinated PR CI) or sibling worktrees when each matching gemspec exists. Production dependencies retain their minimum released API versions; no Git dependencies or compatibility fallbacks are used.
+The Gemfile uses companion checkouts from `.ci-dependencies/<repo>` in coordinated PR CI, or the existing monorepo checkouts two directories above this extension when their gemspecs exist. Production dependencies retain their minimum released API versions.
 
 ## License
 

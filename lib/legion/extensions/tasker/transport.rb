@@ -10,7 +10,7 @@ module Legion
       module Transport
         extend Legion::Extensions::Transport
         extend Legion::Settings::Helper
-        extend Legion::Transport::TaskProtocol::Helper
+        extend Legion::Transport::Task::Protocol::Helper
 
         def self.e_to_q
           [

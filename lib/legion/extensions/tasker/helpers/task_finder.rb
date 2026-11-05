@@ -2,9 +2,13 @@
 
 require 'legion/extensions/tasker'
 require 'legion/data'
-require 'legion/data/task_execution'
+require 'legion/data/models/task'
+require 'legion/data/models/function'
+require 'legion/data/models/relationship'
+require 'legion/transport'
+require 'legion/transport/messages/dynamic'
+require 'legion/transport/messages/subtask'
 require 'legion/json/helper'
-require 'time'
 
 module Legion
   module Extensions
@@ -12,7 +16,7 @@ module Legion
       module Helpers
         module TaskFinder
           include Legion::Logging::Helper
-          include Legion::Transport::TaskProtocol::Helper
+          include Legion::Transport::Task::Protocol::Helper
           include Legion::JSON::Helper
 
           def find_trigger(runner_class:, function:, **)
@@ -70,7 +74,7 @@ module Legion
           end
 
           def tasker_stage(envelope:)
-            types = Legion::Transport::TaskProtocol::MESSAGE_TYPES
+            types = Legion::Transport::Task::Protocol::MESSAGE_TYPES
             if tasker_template_present?(template: envelope[:conditions])
               { status: task_status(name: :conditioner_queued), routing_key: task_route(name: :conditioner), message_type: types.fetch(:subtask) }
             elsif tasker_template_present?(template: envelope[:transformation], engine: envelope[:engine])
@@ -80,13 +84,10 @@ module Legion
             end
           end
 
-          def tasker_blocked_status(task:, now:)
+          def tasker_blocked_status(task:)
             return task_status(name: :cancelled) if task[:cancelled_at] || task[:status] == task_status(name: :cancelled)
-            return task_status(name: :expired) if task[:status] == task_status(name: :expired)
 
-            deadline = task[:deadline_at]
-            deadline = Time.parse(deadline) if deadline.is_a?(String)
-            task_status(name: :expired) if deadline && deadline <= now
+            task_status(name: :expired) if task[:status] == task_status(name: :expired)
           end
 
           def tasker_dispatch_from_task(task:)
@@ -94,6 +95,15 @@ module Legion
             raise ArgumentError, "task #{task[:id]} has no stored dispatch envelope" unless payload.is_a?(Hash) && payload[:options].is_a?(Hash)
 
             payload.merge(options: payload[:options].merge(task_id: task[:id]))
+          end
+
+          def tasker_publish(message_type:, options:)
+            klass = case message_type
+                    when 'dynamic' then Legion::Transport::Messages::Dynamic
+                    when 'subtask', 'transform' then Legion::Transport::Messages::SubTask
+                    else raise ArgumentError, "unknown task message type: #{message_type}"
+                    end
+            klass.new(**options).publish!
           end
         end
       end
