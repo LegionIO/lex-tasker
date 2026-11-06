@@ -12,7 +12,7 @@ module Legion
           include Legion::Extensions::Tasker::Helpers::TaskFinder
 
           def check_subtasks(runner_class:, function:, **opts)
-            trigger = find_trigger(runner_class: runner_class, function: function)
+            trigger = tasker_find_trigger(runner_class: runner_class, function: function)
             return { success: true, subtasks: 0, created: 0 } unless trigger
 
             parent = Legion::Data::Model::Task[opts.fetch(:task_id)]
@@ -22,7 +22,7 @@ module Legion
             blocked ||= tasker_blocked_status(task: opts)
             return { success: true, subtasks: 0, created: 0, status: blocked } if blocked
 
-            relationships = find_subtasks(trigger_id: trigger[:function_id]).select do |relationship|
+            relationships = tasker_find_subtasks(trigger_id: trigger[:function_id]).select do |relationship|
               relationship[:allow_new_chains] || (relationship[:chain_id] && relationship[:chain_id] == opts[:chain_id])
             end
             results = opts.fetch(:results) { opts.fetch(:result, opts.fetch(:args, {})) }

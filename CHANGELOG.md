@@ -3,6 +3,7 @@
 ## [0.4.0] - 2026-10-30
 
 ### Breaking changes
+- TaskFinder helpers and the standalone client lookup methods now use concern-prefixed names: `find_trigger` → `tasker_find_trigger`, `find_subtasks` → `tasker_find_subtasks`, and `find_delayed` → `tasker_find_delayed`. Update direct callers; no aliases retain the old names.
 - Drain the pre-0.4 delayed backlog before upgrading: delayed tasks now require the stored `{ message_type:, options: }` publication envelope. Old payloads are not reconstructed or silently converted.
 - Housekeeping uses `age_seconds:` instead of `age:`. Convert old `purge_old` day values to seconds and old `expire_queued` hour values to seconds; `age:` no longer controls these methods. `purge_old` returns a result Hash and rejects wildcard/nonterminal status purges.
 - `Client.new` no longer accepts `data_model:` and `models_class` is removed; the client uses the configured, loaded Legion Data models.

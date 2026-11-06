@@ -19,7 +19,7 @@ module Legion
           include Legion::Transport::Task::Protocol::Helper
           include Legion::JSON::Helper
 
-          def find_trigger(runner_class:, function:, **)
+          def tasker_find_trigger(runner_class:, function:, **)
             row = Legion::Data::Model::Function
                   .join(:runners, id: :runner_id)
                   .where(Sequel[:functions][:name] => function, Sequel[:runners][:namespace] => runner_class.to_s)
@@ -28,7 +28,7 @@ module Legion
             row&.values&.dup
           end
 
-          def find_subtasks(trigger_id:, **)
+          def tasker_find_subtasks(trigger_id:, **)
             Legion::Data::Model::Relationship
               .join(:functions, id: :action_id)
               .join(:runners, id: Sequel[:functions][:runner_id])
@@ -47,7 +47,7 @@ module Legion
               end
           end
 
-          def find_delayed(**)
+          def tasker_find_delayed(**)
             Legion::Data::Model::Task.where(status: task_status(name: :delayed))
                                      .order(:created, :id).to_enum(:each).lazy.map { |row| row.values.dup }
           end

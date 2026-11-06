@@ -17,7 +17,7 @@ module Legion
           def fetch(now: Time.now, **)
             counts = { success: true, dispatched: 0, cancelled: 0, expired: 0 }
             limit = settings.fetch(:delayed_batch_size)
-            find_delayed.each do |task|
+            tasker_find_delayed.each do |task|
               break if counts.values_at(:dispatched, :cancelled, :expired).sum >= limit
 
               parent = task[:parent_id] ? Legion::Data::Model::Task[task[:parent_id]] : nil

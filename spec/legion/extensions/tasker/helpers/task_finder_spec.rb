@@ -8,8 +8,8 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
 
   it 'normalizes real joined model instances into dispatchable hashes' do
     fixture = seed_relationship(engine: 'erb', transformation: '{}')
-    trigger = client.find_trigger(runner_class: 'Example::Source', function: 'produce')
-    relationships = client.find_subtasks(trigger_id: trigger[:function_id])
+    trigger = client.tasker_find_trigger(runner_class: 'Example::Source', function: 'produce')
+    relationships = client.tasker_find_subtasks(trigger_id: trigger[:function_id])
 
     expect(trigger).to eq(function_id: fixture[:trigger].id, runner_id: fixture[:trigger][:runner_id])
     expect(relationships.first).to be_a(Hash)
@@ -19,8 +19,8 @@ RSpec.describe Legion::Extensions::Tasker::Helpers::TaskFinder do
 
   it 'does not dispatch a disabled relationship or stale cached definition' do
     fixture = seed_relationship
-    expect(client.find_subtasks(trigger_id: fixture[:trigger].id).map { |row| row[:relationship_id] }).to eq([fixture[:relationship].id])
+    expect(client.tasker_find_subtasks(trigger_id: fixture[:trigger].id).map { |row| row[:relationship_id] }).to eq([fixture[:relationship].id])
     fixture[:relationship].update(active: false)
-    expect(client.find_subtasks(trigger_id: fixture[:trigger].id)).to eq([])
+    expect(client.tasker_find_subtasks(trigger_id: fixture[:trigger].id)).to eq([])
   end
 end

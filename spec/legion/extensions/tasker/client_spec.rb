@@ -8,7 +8,7 @@ RSpec.describe Legion::Extensions::Tasker::Client do
   it 'returns delayed task rows as plain hashes' do
     fixture = seed_relationship
     task = Legion::Data::Model::Task.create(function_id: fixture[:action].id, status: 'task.delayed')
-    expect(described_class.new.find_delayed.to_a).to eq([task.values])
+    expect(described_class.new.tasker_find_delayed.to_a).to eq([task.values])
   end
 
   it 'preserves disabled queued recovery during client initialization and observes later policy changes' do

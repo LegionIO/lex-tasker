@@ -73,12 +73,12 @@ Tasker's queue names and routes are fixed. Only wakeup expiration (`transport.fe
 require 'legion/extensions/tasker/client'
 
 client = Legion::Extensions::Tasker::Client.new
-trigger = client.find_trigger(runner_class: 'Example::Source', function: 'produce')
-relationships = client.find_subtasks(trigger_id: trigger.fetch(:function_id)) if trigger
-client.find_delayed.each { |task| puts task.fetch(:id) }
+trigger = client.tasker_find_trigger(runner_class: 'Example::Source', function: 'produce')
+relationships = client.tasker_find_subtasks(trigger_id: trigger.fetch(:function_id)) if trigger
+client.tasker_find_delayed.each { |task| puts task.fetch(:id) }
 ```
 
-The client uses configured, loaded Legion Data models and the standard settings helper with the Tasker namespace. Root-module boot registers defaults; client construction does not change them. `find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a model or hide a disconnected database. Specs use SQLite-backed models and in-process transport.
+The client uses configured, loaded Legion Data models and the standard settings helper with the Tasker namespace. Root-module boot registers defaults; client construction does not change them. `tasker_find_delayed` returns a lazy enumerable of Hash rows. It does not fabricate a model or hide a disconnected database. Specs use SQLite-backed models and in-process transport.
 
 ## Development
 
