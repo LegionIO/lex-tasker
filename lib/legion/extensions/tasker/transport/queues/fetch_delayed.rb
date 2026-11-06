@@ -11,7 +11,7 @@ module Legion
             include Legion::Settings::Helper
 
             def queue_name
-              settings.fetch(:transport).fetch(:fetch_delayed_queue)
+              'task.fetch_delayed'
             end
 
             def queue_options

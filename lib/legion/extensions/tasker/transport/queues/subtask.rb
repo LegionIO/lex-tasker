@@ -8,10 +8,8 @@ module Legion
       module Transport
         module Queues
           class Subtask < Legion::Transport::Queue
-            include Legion::Settings::Helper
-
             def queue_name
-              settings.fetch(:transport).fetch(:subtask_queue)
+              'task.subtask'
             end
           end
         end

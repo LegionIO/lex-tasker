@@ -8,10 +8,8 @@ module Legion
       module Transport
         module Queues
           class Updater < Legion::Transport::Queue
-            include Legion::Settings::Helper
-
             def queue_name
-              settings.fetch(:transport).fetch(:updater_queue)
+              'task.updater'
             end
           end
         end

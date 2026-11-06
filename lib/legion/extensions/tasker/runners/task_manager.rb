@@ -14,8 +14,8 @@ module Legion
           def generate_task_id(function_id:, status: task_status(name: :queued), **opts)
             values = opts.slice(:master_id, :parent_id, :relationship_id, :task_delay, :depth, :cancelled_at)
                          .merge(function_id: function_id, status: status)
-            values[:payload] = json_dump(opts[:payload]) if opts.key?(:payload)
-            values[:function_args] = json_dump(opts[:args]) if opts.key?(:args)
+            values[:payload] = opts[:payload].is_a?(String) ? opts[:payload] : json_dump(opts[:payload]) if opts.key?(:payload)
+            values[:function_args] = opts[:args].is_a?(String) ? opts[:args] : json_dump(opts[:args]) if opts.key?(:args)
             task = Legion::Data::Model::Task.create(values)
             { **task.values, success: true, task_id: task.id }
           end
@@ -44,8 +44,8 @@ module Legion
             counts = { success: true, expired: 0, cancelled: 0 }
             tasks.each do |task|
               status = tasker_blocked_status(task: task.values) || task_status(name: :expired)
-              task.update(status: status)
-              counts[status == task_status(name: :cancelled) ? :cancelled : :expired] += 1
+              changed = Legion::Data::Model::Task.where(id: task.id, status: task[:status], cancelled_at: task[:cancelled_at]).update(status: status)
+              counts[status == task_status(name: :cancelled) ? :cancelled : :expired] += changed
             end
             counts
           end

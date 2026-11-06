@@ -85,9 +85,9 @@ module Legion
           end
 
           def tasker_blocked_status(task:)
-            return task_status(name: :cancelled) if task[:cancelled_at] || task[:status] == task_status(name: :cancelled)
+            return task_status(name: :cancelled) if task[:cancelled_at] || [task_status(name: :cancelled), 'cancelled', 'canceled'].include?(task[:status])
 
-            task_status(name: :expired) if task[:status] == task_status(name: :expired)
+            task_status(name: :expired) if [task_status(name: :expired), 'expired', 'timeout', 'timed_out'].include?(task[:status])
           end
 
           def tasker_dispatch_from_task(task:)

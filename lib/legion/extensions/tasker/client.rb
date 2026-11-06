@@ -9,10 +9,6 @@ module Legion
         include Legion::Settings::Helper
         include Legion::Extensions::Tasker::Helpers::TaskFinder
 
-        def initialize
-          Legion::Settings.loader.load_module_default(extensions: { tasker: Legion::Extensions::Tasker.default_settings })
-        end
-
         def segments
           [:tasker]
         end

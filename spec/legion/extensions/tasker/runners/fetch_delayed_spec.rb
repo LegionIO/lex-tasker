@@ -13,6 +13,20 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
     @staged = bind_task_receiver(exchange: 'task')
   end
 
+  { 'cancelled' => 'task.cancelled', 'expired' => 'task.expired' }.each do |status, expected|
+    it "does not publish a child of a legacy #{status} parent" do
+      fixture = seed_relationship(delay: 1)
+      child_id = creator.check_subtasks(**completion_options(fixture: fixture))[:task_ids].last
+      child = Legion::Data::Model::Task[child_id]
+      Legion::Data::Model::Task[fixture[:parent][:id]].update(status: status)
+
+      expect(runner.fetch(now: child[:created] + 2)).to include(dispatched: 0)
+      expect(child.refresh[:status]).to eq(expected)
+      expect(@received).to be_empty
+      expect(@staged).to be_empty
+    end
+  end
+
   it 'replays the stored immediate envelope after delay, even if the relationship changes' do
     fixture = seed_relationship(conditions: '{"all":[]}', transformation: '{"ok":true}', engine: 'erb')
     options = completion_options(fixture: fixture)
@@ -58,6 +72,23 @@ RSpec.describe Legion::Extensions::Tasker::Runners::FetchDelayed do
     end
     expect(Timeout.timeout(5) { @received.pop }[:task_id]).to eq(due)
     expect(Legion::Data::Model::Task[waiting][:status]).to eq('task.delayed')
+  end
+
+  it 'does not overwrite a destination completed before publication returns' do
+    fixture = seed_relationship(delay: 1)
+    child_id = creator.check_subtasks(**completion_options(fixture: fixture))[:task_ids].first
+    child = Legion::Data::Model::Task[child_id]
+    exchange = Legion::Transport::Exchange.declaration(name: 'example', tenant_id: 'tenant')
+    queue = Legion::Transport::Connection.channel.queue_declare_without_recording_topology("completed-#{SecureRandom.uuid}")
+    @tasker_queues << queue
+    queue.bind(exchange[:name], routing_key: '#')
+    queue.subscribe(manual_ack: false) do |_delivery, _properties, body|
+      message = Legion::JSON.load(body)
+      Legion::Data::Model::Task[message[:task_id]].update(status: 'task.completed')
+    end
+
+    expect(runner.fetch(now: child[:created] + 2)).to include(dispatched: 1)
+    expect(child.refresh[:status]).to eq('task.completed')
   end
 
   it 'leaves a rejected publication delayed and publishes it after its route is restored' do

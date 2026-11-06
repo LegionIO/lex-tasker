@@ -24,8 +24,8 @@ module Legion
               blocked = tasker_blocked_status(task: task)
               blocked ||= tasker_blocked_status(task: parent.values) if parent
               if blocked
-                Legion::Data::Model::Task[task[:id]].update(status: blocked)
-                counts[blocked == task_status(name: :cancelled) ? :cancelled : :expired] += 1
+                changed = Legion::Data::Model::Task.where(id: task[:id], status: task_status(name: :delayed)).update(status: blocked)
+                counts[blocked == task_status(name: :cancelled) ? :cancelled : :expired] += changed
                 next
               end
               next if task[:created] + tasker_delay_seconds(delay: task[:task_delay]) > now
@@ -33,7 +33,7 @@ module Legion
               dispatch = tasker_dispatch_from_task(task: task)
               tasker_publish(**dispatch)
               status = DISPATCH_STATUSES.fetch(dispatch[:message_type])
-              Legion::Data::Model::Task[task[:id]].update(status: task_status(name: status))
+              Legion::Data::Model::Task.where(id: task[:id], status: task_status(name: :delayed)).update(status: task_status(name: status))
               counts[:dispatched] += 1
             end
             counts

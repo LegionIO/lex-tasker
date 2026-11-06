@@ -9,7 +9,6 @@ module Legion
     module Tasker
       module Transport
         extend Legion::Extensions::Transport
-        extend Legion::Settings::Helper
         extend Legion::Transport::Task::Protocol::Helper
 
         def self.e_to_q
@@ -20,17 +19,17 @@ module Legion
             },
             {
               to:          'log',
-              routing_key: settings.fetch(:transport).fetch(:log_route)
+              routing_key: 'task.logs.#'
             }, {
               to:          'check_subtask',
               routing_key: task_route(name: :check_subtask)
             }, {
               to:          'fetch_delayed',
-              routing_key: settings.fetch(:transport).fetch(:fetch_delayed_route)
+              routing_key: 'fetch.delayed'
             }, {
               from:        'tasker',
               to:          'task_manager',
-              routing_key: settings.fetch(:transport).fetch(:task_manager_route)
+              routing_key: 'task.task_manager.#'
             }
           ]
         end

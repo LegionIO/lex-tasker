@@ -8,10 +8,8 @@ module Legion
       module Transport
         module Queues
           class TaskManager < Legion::Transport::Queue
-            include Legion::Settings::Helper
-
             def queue_name
-              settings.fetch(:transport).fetch(:task_manager_queue)
+              'tasker.task_manager'
             end
 
             def queue_options

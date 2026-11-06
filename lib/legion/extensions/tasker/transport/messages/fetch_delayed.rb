@@ -12,7 +12,7 @@ module Legion
             include Legion::Settings::Helper
 
             def routing_key
-              settings.fetch(:transport).fetch(:fetch_delayed_route)
+              'fetch.delayed'
             end
 
             def expiration

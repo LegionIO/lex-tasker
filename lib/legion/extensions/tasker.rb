@@ -34,19 +34,13 @@ module Legion
             queued_statuses:    %i[queued conditioner_queued transformer_queued]
           },
           transport:                     {
-            fetch_delayed_route:         'fetch.delayed',
-            fetch_delayed_queue:         'task.fetch_delayed',
             fetch_delayed_expiration_ms: 5000,
-            fetch_delayed_ttl_ms:        1000,
-            subtask_queue:               'task.subtask',
-            log_queue:                   'task.log',
-            log_route:                   'task.logs.#',
-            task_manager_queue:          'tasker.task_manager',
-            task_manager_route:          'task.task_manager.#',
-            updater_queue:               'task.updater'
+            fetch_delayed_ttl_ms:        1000
           }
         }
       end
     end
   end
 end
+
+Legion::Settings.merge_settings(:extensions, tasker: Legion::Extensions::Tasker.default_settings)

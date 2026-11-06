@@ -8,10 +8,8 @@ module Legion
       module Transport
         module Queues
           class Log < Legion::Transport::Queue
-            include Legion::Settings::Helper
-
             def queue_name
-              settings.fetch(:transport).fetch(:log_queue)
+              'task.log'
             end
           end
         end

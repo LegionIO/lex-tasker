@@ -2,6 +2,13 @@
 
 ## [0.4.0] - 2026-10-30
 
+### Breaking changes
+- Drain the pre-0.4 delayed backlog before upgrading: delayed tasks now require the stored `{ message_type:, options: }` publication envelope. Old payloads are not reconstructed or silently converted.
+- Housekeeping uses `age_seconds:` instead of `age:`. Convert old `purge_old` day values to seconds and old `expire_queued` hour values to seconds; `age:` no longer controls these methods. `purge_old` returns a result Hash and rejects wildcard/nonterminal status purges.
+- `Client.new` no longer accepts `data_model:` and `models_class` is removed; the client uses the configured, loaded Legion Data models.
+- Direct transport requires must use filenames matching their constants: `exchanges/task.rb` → `exchanges/tasker.rb`, `queues/task_log.rb` → `queues/log.rb`, and `queues/task_mananger.rb` → `queues/task_manager.rb`. Wire names and class constants are unchanged.
+- Database and publication failures propagate instead of being reported as successful persistence or dispatch. Relationship fanout requires a persisted parent task and returns created child IDs; Core remains responsible for executing each child.
+
 ### Added
 - Relationship children with bounded depth/fanout and inherited identity, input, schema, and chain lineage.
 - Real Sequel model and in-process transport regression coverage for persistence failures, child publication, and delayed replay.
@@ -13,13 +20,17 @@
 - Use `Legion::Transport::Task::Protocol` and Transport-owned `publish!` defaults with prefetch 1 consumers.
 - Require legion-settings 1.4.5, legion-data 1.11.0, and legion-transport 1.4.32; remove unused cache/crypt direct dependencies.
 - Standalone client uses real database models and settings rather than an unused model injection or fake logging/settings implementations.
-- Use framework-injected settings for runners and actors; standalone clients register boot defaults through Legion Settings and share the live Tasker settings namespace.
+- Register defaults at root-module boot; use framework-injected settings for runners and actors and the standard Tasker namespace for the standalone client. Queue names and routes are fixed, not configuration.
 
 ### Fixed
 - Normalize joined Sequel rows at boundaries, meaningful short templates and explicit engines, delayed cancellation, and task-log deletion. A cancelled parent cannot affect the following parentless delayed task.
 - Create task logs through the real Data model so schema UUID/timestamp defaults are honored.
 - Propagate database write errors and publication failures; retain delayed status when publication fails.
 - Preserve explicit empty housekeeping status lists and resolve local companion dependencies from the existing monorepo checkouts.
+- Preserve pre-serialized task arguments and payloads without double encoding.
+- Do not overwrite a destination's newer status after delayed publication or expire a task whose status/cancellation state changed after selection.
+- Honor legacy cancelled and expired parent statuses when deciding whether delayed work may publish.
+- Match transport filenames to their declared classes; use released Transport in CI and the current Data companion revision.
 
 ## [0.3.10] - 2026-04-13
 
