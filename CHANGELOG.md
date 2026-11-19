@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.1] - 2026-11-19
+
+### Fixed
+- Evaluate opt-in synapse relationships before child creation, retain child idempotency and delayed payloads, and durably correlate signals before outbox publication (fixes LegionIO/lex-synapse#18 with its companion PR).
+
 ## [0.4.0] - 2026-10-30
 
 ### Added

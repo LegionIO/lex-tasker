@@ -30,7 +30,7 @@ module Legion
             depth = tasker_child_depth(parent: parent.values, context: opts, count: relationships.length * results.length)
 
             children = relationships.flat_map do |relationship|
-              results.each_with_index.map do |result, index|
+              results.each_with_index.filter_map do |result, index|
                 tasker_create_child(relationship: relationship, parent: parent.values, trigger: trigger,
                                     result: result, index: index, depth: depth, context: opts)
               end
@@ -40,6 +40,18 @@ module Legion
           end
 
           private
+
+          def tasker_existing_child(key:)
+            task = Legion::Data::Model::Task.first(execution_key: key)
+            { created: false, task: task.values } if task
+          end
+
+          def tasker_evaluate_synapse(relationship:, payload:)
+            # Synapse is an optional plugin; absent or unwrapped relationships retain their ordinary pipeline.
+            return { wrapped: false } unless defined?(Legion::Extensions::Synapse::Integration)
+
+            Legion::Extensions::Synapse::Integration.evaluate_relationship(relationship_id: relationship[:relationship_id], payload: payload)
+          end
 
           def tasker_child_depth(parent:, context:, count:)
             policy = settings.fetch(:execution)
@@ -51,6 +63,19 @@ module Legion
           end
 
           def tasker_create_child(relationship:, parent:, trigger:, result:, index:, depth:, context:)
+            key = "task:#{parent[:id]}:relationship:#{relationship[:relationship_id]}:child:#{index}"
+            existing = tasker_existing_child(key: key)
+            return existing if existing
+
+            evaluation = tasker_evaluate_synapse(relationship: relationship, payload: result)
+            if evaluation[:wrapped]
+              return unless evaluation[:allowed]
+
+              result = evaluation.fetch(:result)
+              raise ArgumentError, 'synapse output must be a Hash for task dispatch' unless result.is_a?(Hash)
+
+              relationship = relationship.except(:conditions, :transformation, :engine, :engine_options)
+            end
             delay = tasker_delay_seconds(delay: relationship[:delay])
             metadata = context.slice(*Legion::Transport::TaskProtocol::METADATA_FIELDS)
                               .except(:task_id, :attempt_id, :execution_token, :message_id)
@@ -64,7 +89,7 @@ module Legion
             envelope[:deadline_at] = deadlines.min unless deadlines.empty?
             stage = tasker_stage(envelope: envelope)
             envelope[:routing_key] = stage[:routing_key]
-            key = "task:#{parent[:id]}:relationship:#{relationship[:relationship_id]}:child:#{index}"
+            envelope[:synapse_signal_id] = evaluation[:signal_id] if evaluation[:wrapped] && evaluation[:signal_id]
             dispatch = { event_key: "#{key}:dispatch", message_type: stage[:message_type], options: envelope }
             values = {
               relationship_id: relationship[:relationship_id], function_id: relationship[:function_id],
