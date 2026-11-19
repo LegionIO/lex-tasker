@@ -44,7 +44,7 @@ module Legion
 
             type = Legion::Transport::TaskProtocol::MESSAGE_TYPES.key(dispatch[:message_type])
             klass = MESSAGE_TYPES.fetch(type)
-            options = dispatch.fetch(:options)
+            options = tasker_correlate_synapse(dispatch: dispatch)
             options = options.merge(routing_key: task_route(name: :transform)) if type == :transform
             result = klass.new(**options).publish!
             raise IOError, 'publication was not accepted' unless result.is_a?(Hash) && result[:accepted] == true
@@ -70,6 +70,19 @@ module Legion
             handle_exception(e, level: :warn, handled: true, dispatch_id: dispatch[:id], task_id: dispatch[:task_id])
             Legion::Data::TaskExecution.release_dispatch(dispatch_id: dispatch[:id], token: dispatch[:token], error: e.message)
             counts[:released] += 1
+          end
+
+          def tasker_correlate_synapse(dispatch:)
+            options = dispatch.fetch(:options)
+            signal_id = options[:synapse_signal_id]
+            return options unless signal_id
+            raise 'synapse integration unavailable for correlated dispatch' unless defined?(Legion::Extensions::Synapse::Integration)
+
+            Legion::Extensions::Synapse::Integration.attach_task(
+              signal_id: signal_id, task_id: dispatch.fetch(:task_id),
+              runner_class: options.fetch(:runner_class), function: options.fetch(:function)
+            )
+            options.except(:synapse_signal_id)
           end
 
           def tasker_discard_dispatch(dispatch:, task:)

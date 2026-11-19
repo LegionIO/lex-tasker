@@ -98,3 +98,11 @@ The Gemfile can use local companion checkouts from `.ci-dependencies/<repo>` (co
 ## License
 
 MIT
+
+## Optional synapse routing
+
+With the companion implementation in [lex-synapse PR #33](https://github.com/LegionIO/lex-synapse/pull/33) loaded, explicitly wrapped relationships are evaluated before creating their child tasks. Rejected evaluations create no child; accepted evaluations supply the child payload directly without rerunning relationship conditions or transformation. Unwrapped relationships retain the ordinary task pipeline. Synapse output must be a Hash.
+
+The evaluation signal ID is persisted in the child dispatch envelope, including delayed children. The outbox attaches that signal to the task and target runner/function before publication; publication retries repeat the same attachment. If the plugin is unavailable for a correlated dispatch, the outbox releases the intent for retry instead of publishing an uncorrelated task. Redelivery of a parent completion reuses existing child identities without reevaluating them. Host completion/failure events are consumed by lex-synapse to record outcomes.
+
+Both PRs are required for the full integration tracked in [lex-synapse #18](https://github.com/LegionIO/lex-synapse/issues/18).
